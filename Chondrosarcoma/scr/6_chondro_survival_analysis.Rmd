@@ -455,19 +455,54 @@ df <- df_CTA_immune_whole_clean_avg[, df_metadata_surv$Patient]
 df <- df[rownames(df) %in% res_cta_signif[,1],]
 df$SYMBOL <- rownames(df)
 
+# Cluster data
+cluster_data <- read.table("../results/clusters_indiv/clusters_cta_signif_coxph_all_indiv.tsv", sep = "\t", header = TRUE)
+cluster_data$Cluster <- as.character(cluster_data$Cluster)
+
 # Data transformation for the plot
 df_long <- pivot_longer(df, 
                         cols = -SYMBOL, 
                         values_to = "value")
 
+# Merge
+df_long <- pivot_longer(df, 
+                        cols = -SYMBOL, 
+                        values_to = "value")
+df_long <- merge(df_long, cluster_data, by = "SYMBOL")
+
 #pdf(file = "../results/figures/other_plots/plot_cta_coxph_signif_all_indiv.pdf", height = 10, width = 50)
-ggplot(df_long, aes(x = reorder(SYMBOL, -value), y = value)) +
-  geom_jitter(width = 0.2, height = 0, size = 1, alpha = 0.3, colour = "blue") +
+ggplot(df_long, aes(x = reorder(SYMBOL, -value), y = value, color = as.factor(Cluster))) +
+  geom_jitter(width = 0.2, height = 0, size = 1, alpha = 0.3) + 
   geom_boxplot(alpha = 0.4, outliers = FALSE, colour = "black", fill = NA) +
-  labs(title = "Plot of instensities per significant coxph CTA", x = "CTA", y = "Intensities") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  labs(title = "Plot of intensities per significant coxph CTA", x = "CTA", y = "Intensities") +
+  scale_color_manual(values = c("1" = "#EA4343", "2" = "blue", "3" = "#75E05A")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))  
 #dev.off()
 ```
+
+```{r, fig.width=15, fig.cap="Intensitites jitter plot for significant CTA (n = 82)"}
+# Cluster data
+cluster_data <- read.table("../results/clusters_indiv/clusters_cta_signif_coxph_all_indiv.tsv", sep = "\t", header = TRUE)
+cluster_data$Cluster <- as.character(cluster_data$Cluster)
+
+# Merge df_long avec les clusters
+df_long <- pivot_longer(df, 
+                        cols = -SYMBOL, 
+                        values_to = "value")
+
+# Ajouter l'information du cluster dans df_long
+df_long <- merge(df_long, cluster_data, by = "SYMBOL")
+
+# Maintenant on peut faire le graphique avec les couleurs par cluster
+ggplot(df_long, aes(x = reorder(SYMBOL, -value), y = value, color = as.factor(Cluster))) +
+  geom_jitter(width = 0.2, height = 0, size = 1, alpha = 0.3) +  # Ajouter la couleur par cluster
+  geom_boxplot(alpha = 0.4, outliers = FALSE, colour = "black", fill = NA) +  # Boîtes sans remplissage mais avec couleur de contour
+  labs(title = "Plot of intensities per significant coxph CTA", x = "CTA", y = "Intensities") +
+  scale_color_manual(values = c("1" = "#EA4343", "2" = "blue", "3" = "#75E05A")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))  
+
+```
+
 
 
 ### b- Normalized intensities for CTA to see the differences
@@ -512,18 +547,28 @@ df <- df_CTA_immune_whole_clean_avg[, df_metadata_surv_conv$Patient]
 df <- df[rownames(df) %in% res_cta_signif[,1],]
 df$SYMBOL <- rownames(df)
 
-# Transform data for the plot
+# Cluster data
+cluster_data <- read.table("../results/clusters_indiv/clusters_cta_signif_conv_indiv.tsv", sep = "\t", header = TRUE)
+cluster_data$Cluster <- as.character(cluster_data$Cluster)
+
+# Data transformation for the plot
 df_long <- pivot_longer(df, 
                         cols = -SYMBOL, 
                         values_to = "value")
 
-# Create the plot
-#pdf(file = "../results/figures/other_plots/plot_cta_coxph_signif_conv_indiv.pdf", height = 10, width = 50)
-ggplot(df_long, aes(x = reorder(SYMBOL, -value), y = value)) +
-  geom_jitter(width = 0.2, height = 0, size = 1, alpha = 0.3, colour = "blue") +
+# Merge
+df_long <- pivot_longer(df, 
+                        cols = -SYMBOL, 
+                        values_to = "value")
+df_long <- merge(df_long, cluster_data, by = "SYMBOL")
+
+#pdf(file = "../results/figures/other_plots/plot_cta_coxph_signif_conv_indiv.pdf", height = 10, width = 20)
+ggplot(df_long, aes(x = reorder(SYMBOL, -value), y = value, color = as.factor(Cluster))) +
+  geom_jitter(width = 0.2, height = 0, size = 1, alpha = 0.3) + 
   geom_boxplot(alpha = 0.4, outliers = FALSE, colour = "black", fill = NA) +
-  labs(title = "Plot of instensities per significant coxph CTA", x = "CTA", y = "Intensities") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  labs(title = "Plot of intensities per significant coxph CTA", x = "CTA", y = "Intensities") +
+  scale_color_manual(values = c("1" = "#EA4343", "2" = "blue", "3" = "#75E05A")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))  
 #dev.off()
 ```
 
@@ -537,9 +582,9 @@ This part compute with all the patients.
 
 ### a- Clustering Kmeans k = 4 with all chondrosarcoma types
 The clustering corresponds to the figure 32.
-```{r, fig.cap="Kaplan-Meier plot with clusters from figure 32 (script 5) (n = 82)"}
+```{r, fig.cap="Kaplan-Meier plot with clusters from figure 31 (script 5) (n = 82)"}
 # Read clusters
-l_anno_all <- read.table("../results/clusters_indiv/clusters_all_indiv_mhc.tsv", header = TRUE, sep = "\t")
+l_anno_all <- read.table("../results/clusters_indiv/clusters_conv_indiv_mhc.tsv", header = TRUE, sep = "\t")
 df_cluster_all <- merge(l_anno_all, df_metadata_surv, by = "Patient")
 rownames(df_cluster_all) <- df_cluster_all$Patient
 p <- plot_km(survfit(Surv(OS.delay, OS.event) ~ Cluster, data = df_cluster_all), df_cluster_all)
@@ -549,7 +594,7 @@ We see that there is no significant differences between the 4 clusters.
 
 ### b- Significative coxph CTA genes clustering
 This clustering is from heatmap 2.
-```{r, fig.cap="Kaplan-Meier plot with clusters from figure 2 (script 5) (n = 82)"}
+```{r, fig.cap="Kaplan-Meier plot with clusters from figure 3 (script 5) (n = 82)"}
 # Read clusters
 l_cta_all <- read.table("../results/clusters_indiv/clusters_all_indiv_mhc_cta_signif_coxph.tsv", header = TRUE, sep = "\t")
 
@@ -560,12 +605,46 @@ p
 ```
 Here we see that the C3 have bad survival and this cluster correspond to an over expression of some CTA. So, we can sat that these CTA could be markers.
 
+### c- Selected significant coxph CTA genes clustering
+```{r, fig.cap="Kaplan-Meier plot with clusters from figure 4 (script 5) (n = 82)"}
+# Prepare table
+l <- read.table("../results/clusters_indiv/clusters_indiv_signif_selected_cta_all.tsv", sep = "\t", header = TRUE)
+
+df_cluster_all <- merge(l, df_metadata_surv, by = "Patient")
+rownames(df_cluster_all) <- df_cluster_all$Patient
+p <- plot_km(survfit(Surv(OS.delay, OS.event) ~ Cluster, data = df_cluster_all), df_cluster_all)
+p
+```
+
+### d- Non selected significant coxph CTA genes clustering
+```{r, fig.cap="Kaplan-Meier plot with clusters from figure 5 (script 5) (n = 82)"}
+# Prepare table
+l <- read.table("../results/clusters_indiv/clusters_indiv_signif_non_selected_cta_all.tsv", sep = "\t", header = TRUE)
+
+df_cluster_all <- merge(l, df_metadata_surv_conv, by = "Patient")
+rownames(df_cluster_all) <- df_cluster_all$Patient
+p <- plot_km(survfit(Surv(OS.delay, OS.event) ~ Cluster, data = df_cluster_all), df_cluster_all)
+p
+```
+
+#### Merge C1 with C2 and C3 with C4
+```{r, fig.cap="Kaplan-Meier plot merged clusters from figure 5 (script 5) (n = 82)"}
+# Prepare table
+df_cluster_conv_merge <- merge(l, df_metadata_surv_conv, by = "Patient")
+df_cluster_conv_merge$Cluster <- ifelse(df_cluster_conv_merge$Cluster == 2, 1, df_cluster_conv_merge$Cluster)
+df_cluster_conv_merge$Cluster <- ifelse(df_cluster_conv_merge$Cluster == 4, 3, df_cluster_conv_merge$Cluster)
+df_cluster_conv_merge$Cluster <- ifelse(df_cluster_conv_merge$Cluster == 3, 2, df_cluster_conv_merge$Cluster)
+rownames(df_cluster_conv_merge) <- df_cluster_conv_merge$Patient
+p <- plot_km(survfit(Surv(OS.delay, OS.event) ~ Cluster, data = df_cluster_conv_merge), df_cluster_conv_merge)
+p
+```
+
 ## 2) Conventional chondrosarcomas
 This part concerns conventional types.
 
 ### a- Clustering Kmeans k = 2
 This clustering is from figure 33.
-```{r, fig.cap="Kaplan-Meier plot with clusters from figure 33 (script 5) (n = 63)"}
+```{r, fig.cap="Kaplan-Meier plot with clusters from figure 31 (script 5) (n = 63)"}
 # Read clusters
 l_anno_conv <- read.table("../results/clusters_indiv/clusters_conv_indiv_mhc.tsv", header = TRUE, sep = "\t")
 df_cluster_conv <- merge(l_anno_conv, df_metadata_surv_conv, by = "Patient")
@@ -577,7 +656,7 @@ We see that there is not differences.
 
 ### b- Significative coxph CTA genes clustering
 This clustering is from heatmap 3.
-```{r, fig.cap="Kaplan-Meier plot with clusters from figure 3 (script 5) (n = 63)"}
+```{r, fig.cap="Kaplan-Meier plot with clusters from figure 6 (script 5) (n = 63)"}
 # Read clusters
 l_cta_conv <- read.table("../results/clusters_indiv/clusters_conv_indiv_mhc_cta_signif_coxph.tsv", header = TRUE, sep = "\t")
 
@@ -591,7 +670,7 @@ This confirm the KM plot with all patients. We clearly see that some CTA have ba
 
 #### Merge C1 and C2
 Here, we want to merge the 2 clusters to see the differences than with 3.
-```{r, fig.cap="Kaplan-Meier plot with merged clusters from figure 18 (n = 63)"}
+```{r, fig.cap="Kaplan-Meier plot with merged clusters from figure 6 (n = 63)"}
 # Prepare table
 df_cluster_cta_all_merge <- merge(l_cta_conv, df_metadata_surv, by = "Patient")
 df_cluster_cta_all_merge$Cluster <- ifelse(df_cluster_cta_all_merge$Cluster == 2, 1, df_cluster_cta_all_merge$Cluster)
@@ -600,6 +679,38 @@ p <- plot_km(survfit(Surv(OS.delay, OS.event) ~ Cluster, data = df_cluster_cta_a
 p
 ```
 We see that there is always significant.
+
+### c- Selected significant coxph CTA genes clustering
+```{r, fig.cap="Kaplan-Meier plot with clusters from figure 7 (script 5) (n = 63)"}
+# Prepare table
+l <- read.table("../results/clusters_indiv/clusters_indiv_signif_selected_cta_conv.tsv", sep = "\t", header = TRUE)
+
+df_cluster_conv <- merge(l, df_metadata_surv_conv, by = "Patient")
+rownames(df_cluster_conv) <- df_cluster_conv$Patient
+p <- plot_km(survfit(Surv(OS.delay, OS.event) ~ Cluster, data = df_cluster_conv), df_cluster_conv)
+p
+```
+### d- Non selected significant coxph CTA genes clustering
+```{r, fig.cap="Kaplan-Meier plot with clusters from figure 8 (script 5) (n = 63)"}
+# Prepare table
+l <- read.table("../results/clusters_indiv/clusters_indiv_signif_non_selected_cta_conv.tsv", sep = "\t", header = TRUE)
+
+df_cluster_conv <- merge(l, df_metadata_surv_conv, by = "Patient")
+rownames(df_cluster_conv) <- df_cluster_conv$Patient
+p <- plot_km(survfit(Surv(OS.delay, OS.event) ~ Cluster, data = df_cluster_conv), df_cluster_conv)
+p
+```
+#### Merge C1 with C2 and C3 with C4
+```{r, fig.cap="Kaplan-Meier plot merged clusters from figure 8 (script 5) (n = 63)"}
+# Prepare table
+df_cluster_conv_merge <- merge(l, df_metadata_surv_conv, by = "Patient")
+df_cluster_conv_merge$Cluster <- ifelse(df_cluster_conv_merge$Cluster == 2, 1, df_cluster_conv_merge$Cluster)
+df_cluster_conv_merge$Cluster <- ifelse(df_cluster_conv_merge$Cluster == 4, 3, df_cluster_conv_merge$Cluster)
+df_cluster_conv_merge$Cluster <- ifelse(df_cluster_conv_merge$Cluster == 3, 2, df_cluster_conv_merge$Cluster)
+rownames(df_cluster_conv_merge) <- df_cluster_conv_merge$Patient
+p <- plot_km(survfit(Surv(OS.delay, OS.event) ~ Cluster, data = df_cluster_conv_merge), df_cluster_conv_merge)
+p
+```
 
 ## 3) Cluster 1 from CTA heatmaps analysis
 This section is the analysis of the previous results. We want to see where the patients clustered in other heatmaps.
@@ -625,6 +736,12 @@ df_analysis_cold_conv <- l_c1_cta_conv %>%
 df_analysis_cold_conv
 ```
 For the conventional chondrosarcomas, we see that all the patient have G3 chondrosarcoma and can be in the cluster 2.
+
+
+
+
+
+
 
 
 
