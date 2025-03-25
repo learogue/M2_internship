@@ -1,4 +1,11 @@
-
+#!/usr/bin/env Rscript
+# ------------------------------------------------------------------------------------------------------------------------
+# R script : Data processing of gene expression in normal tissues from GTEx database of CTA 
+# Author  : Léa ROGUE
+# Date    : 24-03-2025
+# Description : This scripts is to process GTEx data in order to obtain mean of the expression for each CTA in each normal
+# tissue. This allow us to see the expression of CTAs of interest in normal tissues to select the tumor specific CTAs.
+# ------------------------------------------------------------------------------------------------------------------------
 
 # Download necessary files with bash commands
 #wget https://storage.googleapis.com/adult-gtex/annotations/v10/metadata-files/GTEx_Analysis_v10_Annotations_SampleAttributesDS.txt
@@ -41,4 +48,3 @@ df_tissue_cta_mean <- df_expr_cta_tissues %>%
 
 # Save
 write.table(df_tissue_cta_mean, "../results/matrix_expr_cta_tissues_gtex.tsv",  sep = "\t", row.names = FALSE, quote = FALSE)
-
