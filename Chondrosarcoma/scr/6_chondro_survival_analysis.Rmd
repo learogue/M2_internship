@@ -436,7 +436,7 @@ This section analyzes the impact of CTA on survival probabilites.
 This part concern all the patients.
 ```{r, fig.height=18, fig.cap="Forest plot for significant CTA (n = 82)"}
 res_cta <- apply_coxph_model(df_expr_cta)
-#write.table(results_cont, "../results/results_coxph_var_cont_cta_zscore_all_patietns.tsv", sep = "\t", row.names = FALSE, quote = FALSE)
+#write.table(res_cta, "../results/results_coxph_cta_all_indiv.tsv", sep = "\t", row.names = FALSE, quote = FALSE)
 
 # Forest plot on significative CTA
 res_cta_signif <- res_cta[res_cta$Pvalue < 0.05,]
@@ -531,7 +531,8 @@ df_expr_cta <- df_expr_cta[df_metadata_surv_conv$Patient, ]
 
 # Apply coxph and generate forest plot with significant data
 res_cta <- apply_coxph_model(df_expr_cta)
-#write.table(results_cont, "../results/results_coxph_var_cont_cta_zscore_all_patietns.tsv", sep = "\t", row.names = FALSE, quote = FALSE)
+#write.table(res_cta, "../results/results_coxph_cta_conv_indiv.tsv", sep = "\t", row.names = FALSE, quote = FALSE)
+
 res_cta_signif <- res_cta[res_cta$Pvalue < 0.05,]
 #pdf("../results/figures/forest_plots/conv_chondro/forest_plot_conv_patients_var_cont_cta_zscores_sorted.pdf", width = 10, height = 30)
 generate_forestplot(res_cta_signif, Type = FALSE)
