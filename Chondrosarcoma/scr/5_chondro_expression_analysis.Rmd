@@ -37,7 +37,6 @@ library(colorRamp2)
 library(RColorBrewer)
 library(limma)
 library(EnhancedVolcano)
-library(writexl)
 library(WGCNA)
 ```
 
@@ -66,15 +65,29 @@ pca_plot <- function(pca, batch, legend) {
     }
 }
 
+# Function to calculate Z scores
+calculate_z_scores <- function(df_input, col) {
+  # Exclude col PROBEID SYMBOL and CTA
+  data_values <- df_input[, -c(col)]
+
+  # Calculate Z-scores
+  z_scores_row <- t(scale(t(data_values)))
+
+  # Add columns
+  df_z_scores <- cbind(df_input[, c(col)], z_scores_row)
+
+  # Return df
+  return(df_z_scores)
+}
+
 # Matrix with intensities and information on immune signature and CTA
-df_CTA_immune_whole_clean_avg <- read.table("../results/whole_gene_int_CTA_sign_imm_clean.tsv", sep = "\t", header = TRUE, check.names = FALSE)
-rownames(df_CTA_immune_whole_clean_avg) = df_CTA_immune_whole_clean_avg$SYMBOL
+df_CTA_immune_whole_clean_avg_102 <- read.table("../results/whole_gene_int_CTA_sign_imm_clean.tsv", sep = "\t", header = TRUE, check.names = FALSE, row.names = 1)
 
 # Matrix with z-scores intensities and information on immune signature and CTA
-df_CTA_immune_whole_clean_z_scores <- read.table("../results/whole_gene_CTA_sign_imm_clean_avg_z_scores.tsv", sep = "\t", header = TRUE, check.names = FALSE)
+df_CTA_immune_whole_clean_z_scores_102 <- read.table("../results/whole_gene_CTA_sign_imm_clean_avg_z_scores.tsv", sep = "\t", header = TRUE, check.names = FALSE)
 
 # Matrix with avg on genes per signature in zscores
-df_avg_immune_sign_z_scores <- read.table("../results/imm_sign_avg_z_scores.tsv", sep = "\t", header = TRUE, check.names = FALSE)
+df_avg_immune_sign_z_scores_102 <- read.table("../results/imm_sign_avg_z_scores.tsv", sep = "\t", header = TRUE, check.names = FALSE)
 
 # Metadata
 df_metadata <- read.table("../results/metadata.tsv", sep = "\t", header = TRUE, check.names = FALSE, dec = ",")
@@ -88,6 +101,20 @@ df_metadata_surv_conv <- na.omit(df_metadata_surv_conv)
 # Metadata survival all individuals
 df_metadata_surv_all <- df_metadata[, c("Patient", "OS.delay", "OS.event")]
 df_metadata_surv_all <- na.omit(df_metadata_surv_all)
+
+# Matrix for all patients with survival metadata
+df_CTA_immune_whole_clean_avg_82 <- df_CTA_immune_whole_clean_avg_102[, c("Signature", "CTA", colnames(df_CTA_immune_whole_clean_avg_102)[colnames(df_CTA_immune_whole_clean_avg_102) %in% df_metadata_surv_all$Patient])]
+
+# Z scores matrix for all patients with survival metadata
+df_z_scores_82 <- calculate_z_scores(df_CTA_immune_whole_clean_avg_82, c(1,2))
+
+# Matrix for conventional patients
+df_CTA_immune_whole_clean_avg_73 <- df_CTA_immune_whole_clean_avg_102[, c("Signature", "CTA", colnames(df_CTA_immune_whole_clean_avg_102)[colnames(df_CTA_immune_whole_clean_avg_102) %in% patients_conv])]
+df_z_scores_73 <- calculate_z_scores(df_CTA_immune_whole_clean_avg_73, c(1,2))
+
+# Matrix for conventional patients with survival metadata
+df_CTA_immune_whole_clean_avg_63 <- df_CTA_immune_whole_clean_avg_102[, c("Signature", "CTA", colnames(df_CTA_immune_whole_clean_avg_102)[colnames(df_CTA_immune_whole_clean_avg_102) %in% df_metadata_surv_conv$Patient])]
+df_z_scores_63 <- calculate_z_scores(df_CTA_immune_whole_clean_avg_63, c(1,2))
 ```
 
 \newpage
@@ -98,8 +125,8 @@ This analysis begins with the full matrix of z-scores, from which CTA genes are 
 ```{r, fig.height=10, fig.width= 8, fig.cap="Heatmap of relative expression of all CTAs (n = 102)"}
 # Prepare data to create heatmap
 # Convert to a matrix
-rownames(df_CTA_immune_whole_clean_z_scores) <- df_CTA_immune_whole_clean_z_scores$SYMBOL
-df <- df_CTA_immune_whole_clean_z_scores %>%
+rownames(df_CTA_immune_whole_clean_z_scores_102) <- df_CTA_immune_whole_clean_z_scores_102$SYMBOL
+df <- df_CTA_immune_whole_clean_z_scores_102 %>%
   filter(CTA != "NA") %>%
   filter(!grepl("^(NA,)*NA$", CTA))
 
@@ -109,8 +136,6 @@ expr_cta <- df %>%
 matrix_expr_cta <- as.matrix(expr_cta)
 
 # Create the heatmap
-#pdf("../results/figures/heatmaps/heatmap_cta_all.pdf", height = 30)
-set.seed(1)
 colors <- colorRampPalette(c("blue", "white", "red"))(100)
 Heatmap(matrix_expr_cta,
     cluster_rows = TRUE,    
@@ -128,12 +153,11 @@ Heatmap(matrix_expr_cta,
     row_names_gp = gpar(fontsize = 2),
     heatmap_legend_param = list(title = "Expression Level")
 )
-#dev.off()
 ```
 \newpage
 This heatmap reveals the variation in CTA gene expression across patients.
 
-## 2) Relative expression of CTA associated with survival probability across all individuals (with survival metadata)
+## 2) Relative expression of CTA associated with survival probability across all individuals
 Here, I focus on the CTA genes that were found to be significant in a Cox proportional hazards model for all individuals (see script 6). These CTA genes influence the Hazard Ratio (HR), which reflects survival probabilities. An HR > 1 indicates an increased risk of death, meaning higher expression of the CTA gene corresponds to a higher probability of death, and vice versa.
 ```{r, fig.cap="Heatmap of CTAs that impact survival (n = 102)"}
 # Read CTA list from files
@@ -142,7 +166,6 @@ l_CTA_all <- l_CTA_all$V1
 data <- matrix_expr_cta[rownames(matrix_expr_cta) %in% l_CTA_all,]
 
 # Create the heatmap
-#pdf("../results/figures/heatmaps/heatmap_cta_coxph_signif_all_indiv.pdf", height = 8)
 heatmap_cta_signif_all <- Heatmap(data,
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
@@ -160,23 +183,16 @@ heatmap_cta_signif_all <- Heatmap(data,
     heatmap_legend_param = list(title = "Expression Level")
 )
 heatmap_cta_signif_all <- draw(heatmap_cta_signif_all)
-#dev.off()
 ```
+\newpage
 
-
-
-
-## 2) Relative expression of CTA associated with survival probability across all individuals (with survival metadata)
+## 3) Relative expression of CTA associated with survival probability across all individuals (with survival metadata)
 Here, I focus on the CTA genes that were found to be significant in a Cox proportional hazards model for all individuals (see script 6). These CTA genes influence the Hazard Ratio (HR), which reflects survival probabilities. An HR > 1 indicates an increased risk of death, meaning higher expression of the CTA gene corresponds to a higher probability of death, and vice versa.
-```{r, fig.cap="Heatmap of CTAs that impact survival (n = 82)"}
-# Read CTA list from files
-l_CTA_all <- read.table("../data/CTA_signif_coxph_all_indiv.txt", header = FALSE)
-l_CTA_all <- l_CTA_all$V1
-data <- matrix_expr_cta[rownames(matrix_expr_cta) %in% l_CTA_all, colnames(matrix_expr_cta) %in% df_metadata_surv_all$Patient]
+```{r, fig.height=8, fig.cap="Heatmap of CTAs that impact survival (n = 82)"}
+data_all_82 <- df_z_scores_82[rownames(df_z_scores_82) %in% l_CTA_all, -c(1,2)]
 
 # Create the heatmap
-#pdf("../results/figures/heatmaps/heatmap_cta_coxph_signif_all_indiv.pdf", height = 8)
-heatmap_cta_signif_all <- Heatmap(data,
+heatmap_cta_signif_all_82 <- Heatmap(as.matrix(data_all_82),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -192,53 +208,53 @@ heatmap_cta_signif_all <- Heatmap(data,
     row_names_gp = gpar(fontsize = 2),
     heatmap_legend_param = list(title = "Expression Level")
 )
-heatmap_cta_signif_all <- draw(heatmap_cta_signif_all)
-#dev.off()
+heatmap_cta_signif_all_82 <- draw(heatmap_cta_signif_all_82)
 ```
+\newpage
 The heatmap reveals three distinct clusters of patients, which I further investigate in the survival analysis (see script 6) to determine if survival probabilities differ between these clusters.
 
 ```{r}
 # Store clusters for survival analysis in script 6
 # Take col indexes
-indiv_clust <- column_order(heatmap_cta_signif_all)
+indiv_clust <- column_order(heatmap_cta_signif_all_82)
 
 # Create table with indiv names
 df_indiv_clusters_hm <- data.frame(
-  Cluster = c(rep(1, length(indiv_clust[1:15])), 
-              rep(2, length(indiv_clust[16:52])),
-              rep(3, length(indiv_clust[53:82]))),
-  Patient = c(colnames(data)[indiv_clust[1:18]],
-            colnames(data)[indiv_clust[19:52]],
-            colnames(data)[indiv_clust[53:82]]))
+  Cluster = c(rep(1, length(indiv_clust[1:18])), 
+              rep(2, length(indiv_clust[19:53])),
+              rep(3, length(indiv_clust[54:82]))),
+  Patient = c(colnames(data_all_82)[indiv_clust[1:18]],
+            colnames(data_all_82)[indiv_clust[19:54]],
+            colnames(data_all_82)[indiv_clust[55:82]]))
 
 # Save
 #write.table(df_indiv_clusters_hm, file = "../results/clusters_indiv/clusters_all_indiv_mhc_cta_signif_coxph.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
 
 # Store cluster to analyze jitter plot in script 6
 # Take row indexes
-cta_clust <- row_order(heatmap_cta_signif_all)
+cta_clust <- row_order(heatmap_cta_signif_all_82)
 
 # Create table with cta
 df_cta_clusters_hm <- data.frame(
-  Cluster = c(rep(1, length(cta_clust[1:15])), 
-              rep(2, length(cta_clust[16:128])),
-              rep(3, length(cta_clust[129:182]))),
-  SYMBOL = c(rownames(data)[cta_clust[1:18]],
-            rownames(data)[cta_clust[19:128]],
-            rownames(data)[cta_clust[129:182]]))
+  Cluster = c(rep(1, length(cta_clust[1:55])), 
+              rep(2, length(cta_clust[56:142])),
+              rep(3, length(cta_clust[143:182]))),
+  SYMBOL = c(rownames(data_all_82)[cta_clust[1:55]],
+            rownames(data_all_82)[cta_clust[56:142]],
+            rownames(data_all_82)[cta_clust[143:182]]))
 # Save
 #write.table(df_cta_clusters_hm, file = "../results/clusters_indiv/clusters_cta_signif_coxph_all_indiv.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
 ```
 
 ### a- Relative expression of selected CTA
 ```{r, fig.cap="Heatmap of selected CTAs that impact survival (n = 82)"}
-l <- c("FRMPD1", "CTAG2", "GAPDHS", "CABLES2", "CCDC136", "HMGB4", "ITPRIPL1", "TDRD12", "PKMYT1", "TUBA3E", "CBX2", "LRWD1", "FHAD1", "MAGEA4", "UTF1")
+l <- c("PAGE5", "VENTXP1", "TEX15", "TSPY2", "PASD1", "RBM44", "POTEA", "SPA17", "GNAT3", "ADAM2", "MORC1", "SLCO6A1", "ENTHD1", "HTR7", "DNAJC5B", "ASZ1", "SYCP1", "RAD51AP2", "LRRIQ3", "UBE2U", "RAD21L1", "BTG4", "ADAD1", "DNAH8", "RBM46", "ZPBP2", "ADAM18", "HMGB4", "ITPRIPL1", "TDRD12", "CABLES2", "CCDC136", "CTAG2", "FRMPD1", "TUBA3E", "PKMYT1", "CBX2", "GAPDHS", "MAGEA4", "UTF1")
 
-data_selected_CTA_all <- matrix_expr_cta[rownames(matrix_expr_cta) %in% l_CTA_all, colnames(matrix_expr_cta) %in% df_metadata_surv_all$Patient]
-data_selected_CTA_all <- data_selected_CTA_all[!rownames(data_selected_CTA_all) %in% l, ]
+data_selected_CTA_all <- df_z_scores_82[rownames(df_z_scores_82) %in% l_CTA_all, -c(1,2)]
+data_selected_CTA_all <- data_selected_CTA_all[!rownames(data_selected_CTA_all) %in% l,]
 
 # Create the heatmap
-heatmap_cta_signif_conv_sorted <- Heatmap(data_selected_CTA_all,
+heatmap_cta_signif_conv_sorted_82 <- Heatmap(as.matrix(data_selected_CTA_all),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -253,15 +269,14 @@ heatmap_cta_signif_conv_sorted <- Heatmap(data_selected_CTA_all,
     row_names_gp = gpar(fontsize = 2),
     heatmap_legend_param = list(title = "Expression Level")
 )
-
-heatmap_cta_signif_conv_sorted_draw <- draw(heatmap_cta_signif_conv_sorted)
+heatmap_cta_signif_conv_sorted_draw_82 <- draw(heatmap_cta_signif_conv_sorted_82)
 ```
+\newpage
+
 ```{r}
-#clusters_conv_indiv_mhc_cta_signif_selected
 # Store clusters
 # Take col indexes
-indiv_clust <- column_order(heatmap_cta_signif_conv_sorted_draw)
-
+indiv_clust <- column_order(heatmap_cta_signif_conv_sorted_draw_82)
 
 # Create table with indiv names
 df_indiv_clusters_hm <- data.frame(
@@ -277,12 +292,11 @@ df_indiv_clusters_hm <- data.frame(
 
 ### b- Relative expression of non selected CTA
 ```{r, fig.cap="Heatmap of non selected CTAs that impact survival (n = 82)"}
-data_non_selected_CTA <- matrix_expr_cta[rownames(matrix_expr_cta) %in% l_CTA_all, colnames(matrix_expr_cta) %in% df_metadata_surv_all$Patient]
-data_non_selected_CTA <- data_non_selected_CTA[rownames(data_non_selected_CTA) %in% l, ]
+data_non_selected_CTA_82 <- df_z_scores_82[rownames(df_z_scores_82) %in% l_CTA_all, -c(1,2)]
+data_non_selected_CTA_82 <- data_non_selected_CTA_82[rownames(data_non_selected_CTA_82) %in% l, ]
 
 # Create the heatmap
-set.seed(1)
-heatmap_cta_signif_conv_non_selected <- Heatmap(data_non_selected_CTA,
+heatmap_cta_signif_conv_non_selected_82 <- Heatmap(as.matrix(data_non_selected_CTA_82),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -297,42 +311,41 @@ heatmap_cta_signif_conv_non_selected <- Heatmap(data_non_selected_CTA,
     row_names_gp = gpar(fontsize = 4),
     heatmap_legend_param = list(title = "Expression Level")
 )
-
-heatmap_cta_signif_conv_non_selected <- draw(heatmap_cta_signif_conv_non_selected)
+heatmap_cta_signif_conv_non_selected_82 <- draw(heatmap_cta_signif_conv_non_selected_82)
 ```
+\newpage
+
 ```{r}
 # Store clusters
 # Take col indexes
-indiv_clust <- column_order(heatmap_cta_signif_conv_non_selected)
-
+indiv_clust <- column_order(heatmap_cta_signif_conv_non_selected_82)
 
 # Create table with indiv names
 df_indiv_clusters_hm <- data.frame(
-  Cluster = c(rep(1, length(indiv_clust[1:16])), 
-              rep(2, length(indiv_clust[17:48])),
-              rep(3, length(indiv_clust[49:69])),
-              rep(4, length(indiv_clust[70:82]))),
-  Patient = c(colnames(data)[indiv_clust[1:16]],
-            colnames(data)[indiv_clust[17:48]],
-            colnames(data)[indiv_clust[49:69]],
-            colnames(data)[indiv_clust[70:82]])
+  Cluster = c(rep(1, length(indiv_clust[1:15])), 
+              rep(2, length(indiv_clust[16:36])),
+              rep(3, length(indiv_clust[37:73])),
+              rep(4, length(indiv_clust[74:82]))),
+  Patient = c(colnames(data_non_selected_CTA_82)[indiv_clust[1:15]],
+            colnames(data_non_selected_CTA_82)[indiv_clust[16:36]],
+            colnames(data_non_selected_CTA_82)[indiv_clust[37:73]],
+            colnames(data_non_selected_CTA_82)[indiv_clust[74:82]])
 )
 
 # Save
 #write.table(df_indiv_clusters_hm, file = "../results/clusters_indiv/clusters_indiv_signif_non_selected_cta_all.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
 ```
 
-## 3) Relative expression of CTA associated with survival probability in conventional chondrosarcoma patients (with survival metadata)
+## 4) Relative expression of CTA associated with survival probability in conventional chondrosarcoma patients (with survival metadata)
 In the literature, we can observe that the dedifferentiated end benign groups are an other category and can be very different than conventional chondrosarcoma (grade 1 to 3), so I select only the conventional patients. We also see later that some dedifferentiated patients are very infiltrated by immune cells so this can distort the results.
 ```{r, fig.cap="Heatmap of CTAs that impact survival (n = 63)"}
 # List of CTA for coxph analysis
 l_CTA_conv <- read.table("../data/CTA_signif_coxph_conv_indiv.txt", header = FALSE)
 l_CTA_conv <- l_CTA_conv$V1
-data <- matrix_expr_cta[rownames(matrix_expr_cta) %in% l_CTA_conv, colnames(matrix_expr_cta) %in% df_metadata_surv_conv$Patient]
+data_cta_63 <- df_z_scores_63[rownames(df_z_scores_63) %in% l_CTA_conv, -c(1,2)]
 
 # Create the heatmap
-#pdf("../results/figures/heatmaps/heatmap_cta_coxph_signif_conv_indiv.pdf", height = 8)
-heatmap_cta_signif_conv <- Heatmap(data,
+heatmap_cta_signif_conv_63 <- Heatmap(as.matrix(data_cta_63),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -348,41 +361,41 @@ heatmap_cta_signif_conv <- Heatmap(data,
     row_names_gp = gpar(fontsize = 2),
     heatmap_legend_param = list(title = "Expression Level")
 )
-heatmap_cta_signif_conv <- draw(heatmap_cta_signif_conv)
-#dev.off()
+heatmap_cta_signif_conv_63 <- draw(heatmap_cta_signif_conv_63)
 ```
+\newpage
 Similar to the previous heatmap, we observe three clusters of patients, which are then used for a survival analysis (see script 6).
 
 ```{r}
 # Store clusters
 # Take col indexes
-indiv_clust <- column_order(heatmap_cta_signif_conv)
+indiv_clust <- column_order(heatmap_cta_signif_conv_63)
 
 
 # Create table with indiv names
 df_indiv_clusters_hm <- data.frame(
   Cluster = c(rep(1, length(indiv_clust[1:5])), 
-              rep(2, length(indiv_clust[6:37])),
-              rep(3, length(indiv_clust[38:63]))),
-  Patient = c(colnames(data)[indiv_clust[1:5]],
-            colnames(data)[indiv_clust[6:37]],
-            colnames(data)[indiv_clust[38:63]])
+              rep(2, length(indiv_clust[6:33])),
+              rep(3, length(indiv_clust[34:63]))),
+  Patient = c(colnames(data_cta_63)[indiv_clust[1:5]],
+            colnames(data_cta_63)[indiv_clust[6:33]],
+            colnames(data_cta_63)[indiv_clust[34:63]])
 )
 # Save
-#write.table(df_indiv_clusters_hm, file = '../results/cluserts_indiv/clusters_conv_indiv_mhc_cta_signif_coxph.tsv', sep = '\t', quote = FALSE, row.names = FALSE)
+#write.table(df_indiv_clusters_hm, file = '../results/clusters_indiv/clusters_conv_indiv_mhc_cta_signif_coxph.tsv', sep = '\t', quote = FALSE, row.names = FALSE)
 
 # Store cluster to analyze jitter plot in script 6
 # Take row indexes
-cta_clust <- row_order(heatmap_cta_signif_conv)
+cta_clust <- row_order(heatmap_cta_signif_conv_63)
 
 # Table with cta clusters
 df_cta_clusters_hm <- data.frame(
-  Cluster = c(rep(1, length(cta_clust[1:20])), 
-              rep(2, length(cta_clust[21:77])),
-              rep(3, length(cta_clust[78:108]))),
-  SYMBOL = c(rownames(data)[cta_clust[1:20]],
-            rownames(data)[cta_clust[21:77]],
-            rownames(data)[cta_clust[78:108]]))
+  Cluster = c(rep(1, length(cta_clust[1:22])), 
+              rep(2, length(cta_clust[23:78])),
+              rep(3, length(cta_clust[79:108]))),
+  SYMBOL = c(rownames(data_cta_63)[cta_clust[1:22]],
+            rownames(data_cta_63)[cta_clust[23:78]],
+            rownames(data_cta_63)[cta_clust[79:108]]))
 
 # Save
 #write.table(df_cta_clusters_hm, file = "../results/clusters_indiv/clusters_cta_signif_conv_indiv.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
@@ -390,14 +403,13 @@ df_cta_clusters_hm <- data.frame(
 
 ### a- Relative expression of selected CTA
 ```{r, fig.cap="Heatmap of selected CTAs that impact survival (n = 63)"}
-l <- c("CALR3", "SCAND3", "TPTE", "MAGEC1", "DSCR8", "POTEE", "POTEG", "SPACA5", "SYCE2", "COX6B2", "HIPK4", "GAPDHS", "TCTE1", "KRT72", "CTAG2", "ARGFX", "HES3", "HBZ", "CCDC63", "UTF1")
+l <- c("HMGB4", "CALR3", "UTF1", "HBZ", "HES3", "CCDC63", "TSPY2", "TCTE1", "KRT72", "CTAG2", "SPACA5", "COX6B2", "HIPK4", "GAPDHS", "SCAND3", "TPTE", "SYCE2", "DSCR8", "MAGEC1", "POTEE", "POTEG", "ARGFX")
 
-data_selected_CTA_conv <- matrix_expr_cta[rownames(matrix_expr_cta) %in% l_CTA_conv, colnames(matrix_expr_cta) %in% df_metadata_surv_conv$Patient]
-data_selected_CTA_conv <- data_selected_CTA_conv[!rownames(data_selected_CTA_conv) %in% l, ]
+data_selected_CTA_conv_63 <- df_z_scores_63[rownames(df_z_scores_63) %in% l_CTA_conv, -c(1,2)]
+data_selected_CTA_conv_63 <- data_selected_CTA_conv_63[!rownames(data_selected_CTA_conv_63) %in% l, ]
 
 # Create the heatmap
-set.seed(1)
-heatmap_cta_signif_conv_sorted <- Heatmap(data_selected_CTA_conv,
+heatmap_cta_signif_conv_sorted_63 <- Heatmap(as.matrix(data_selected_CTA_conv_63),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -412,37 +424,34 @@ heatmap_cta_signif_conv_sorted <- Heatmap(data_selected_CTA_conv,
     row_names_gp = gpar(fontsize = 2),
     heatmap_legend_param = list(title = "Expression Level")
 )
-
-heatmap_cta_signif_conv_sorted_draw <- draw(heatmap_cta_signif_conv_sorted)
+heatmap_cta_signif_conv_sorted_draw_63 <- draw(heatmap_cta_signif_conv_sorted_63)
 ```
+\newpage
+
 ```{r}
-#clusters_conv_indiv_mhc_cta_signif_selected
 # Store clusters
 # Take col indexes
-indiv_clust <- column_order(heatmap_cta_signif_conv_sorted_draw)
-
+indiv_clust <- column_order(heatmap_cta_signif_conv_sorted_draw_63)
 
 # Create table with indiv names
 df_indiv_clusters_hm <- data.frame(
-  Cluster = c(rep(1, length(indiv_clust[1:29])), 
-              rep(2, length(indiv_clust[30:63]))),
-  Patient = c(colnames(data)[indiv_clust[1:29]],
-            colnames(data)[indiv_clust[30:63]])
+  Cluster = c(rep(1, length(indiv_clust[1:33])), 
+              rep(2, length(indiv_clust[34:63]))),
+  Patient = c(colnames(data_selected_CTA_conv_63)[indiv_clust[1:33]],
+            colnames(data_selected_CTA_conv_63)[indiv_clust[34:63]])
 )
 
 # Save
 #write.table(df_indiv_clusters_hm, file = "../results/clusters_indiv/clusters_indiv_signif_selected_cta_conv.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
 ```
 
-
-
 ### b- Relative expression of non selected CTA
-```{r, fig.cap="Heatmap of non selected CTAs that impact survival (n = 63)"}
-data_non_selected_CTA <- matrix_expr_cta[rownames(matrix_expr_cta) %in% l_CTA_conv, colnames(matrix_expr_cta) %in% df_metadata_surv_conv$Patient]
-data_non_selected_CTA <- data_non_selected_CTA[rownames(data_non_selected_CTA) %in% l, ]
+```{r, fig.height=2, fig.width= 8, fig.cap="Heatmap of non selected CTAs that impact survival (n = 63)"}
+data_non_selected_CTA_63 <- df_z_scores_63[rownames(df_z_scores_63) %in% l_CTA_conv, -c(1,2)]
+data_non_selected_CTA_63 <- data_non_selected_CTA_63[rownames(data_non_selected_CTA_63) %in% l, ]
 
 # Create the heatmap
-heatmap_cta_signif_conv_non_selected <- Heatmap(data_non_selected_CTA,
+heatmap_cta_signif_conv_non_selected_63 <- Heatmap(as.matrix(data_non_selected_CTA_63),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -454,34 +463,33 @@ heatmap_cta_signif_conv_non_selected <- Heatmap(data_non_selected_CTA,
     show_row_names = TRUE,
     column_title = "Heatmap of other selected CTA with significant survival impact",
     column_names_gp = gpar(fontsize = 4),
-    row_names_gp = gpar(fontsize = 4),
+    row_names_gp = gpar(fontsize = 2),
     heatmap_legend_param = list(title = "Expression Level")
 )
-
-heatmap_cta_signif_conv_non_selected <- draw(heatmap_cta_signif_conv_non_selected)
+heatmap_cta_signif_conv_non_selected_63 <- draw(heatmap_cta_signif_conv_non_selected_63)
 ```
+\newpage
+
 ```{r}
 # Store clusters
 # Take col indexes
-indiv_clust <- column_order(heatmap_cta_signif_conv_non_selected)
-
+indiv_clust <- column_order(heatmap_cta_signif_conv_non_selected_63)
 
 # Create table with indiv names
 df_indiv_clusters_hm <- data.frame(
-  Cluster = c(rep(1, length(indiv_clust[1:7])), 
-              rep(2, length(indiv_clust[8:26])),
-              rep(3, length(indiv_clust[27:37])),
-              rep(4, length(indiv_clust[38:63]))),
-  Patient = c(colnames(data)[indiv_clust[1:7]],
-            colnames(data)[indiv_clust[8:26]],
-            colnames(data)[indiv_clust[27:37]],
-            colnames(data)[indiv_clust[38:63]])
+  Cluster = c(rep(1, length(indiv_clust[1:17])),
+              rep(2, length(indiv_clust[18:37])),
+              rep(3, length(indiv_clust[38:49])),
+              rep(4, length(indiv_clust[50:63]))),
+  Patient = c(colnames(data_non_selected_CTA_63)[indiv_clust[1:17]],
+              colnames(data_non_selected_CTA_63)[indiv_clust[18:37]],
+              colnames(data_non_selected_CTA_63)[indiv_clust[38:49]],
+              colnames(data_non_selected_CTA_63)[indiv_clust[50:63]])
 )
 
 # Save
 #write.table(df_indiv_clusters_hm, file = "../results/clusters_indiv/clusters_indiv_signif_non_selected_cta_conv.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
 ```
-
 \newpage
 
 # II. Relative immune cells expression
@@ -490,7 +498,7 @@ In this section, we aim to observe the relative expression of immune cell signat
 ## 1) Hierarchical clustering
 ```{r, fig.cap="Heatmap and hierarchical clustering of relative immune cells expression (n = 102)"}
 # Heatmap
-heatmap_data <- as.data.frame(df_avg_immune_sign_z_scores)
+heatmap_data <- as.data.frame(df_avg_immune_sign_z_scores_102)
 rownames(heatmap_data) <- heatmap_data$Signature
 heatmap_data <- heatmap_data[ , -1]  # Remove the Signature column
 Heatmap(
@@ -511,6 +519,7 @@ Heatmap(
 ```
 From the heatmap, we observe a clear separation between a "hot" side and a "cold" side, indicating that some tumors are more infiltrated by immune cells than others.
 It’s possible that some cells are more present than others, which could make the distinction between hot and cold tumors more apparent.
+\newpage
 
 ## 2) K-means clustering with k = 2 on patients
 ```{r, fig.cap="Elbow plot for k-means clustering"}
@@ -539,9 +548,6 @@ The elbow plot doesn't reveal a distinct elbow, so the number of clusters is cho
 We proceed with k-means clustering with k = 2, as we are interested in distinguishing between the "cold" and "hot" clusters.
 
 ```{r, fig.cap="Heatmap with k-means clustering (k = 2) of immune cells expression (n = 102)"}
-# Saved pdf
-#pdf("../results/figures/heatmaps/heatmap_kmeans_2.pdf", width = 8, height = 6)
-
 # Set seed to reproducible results
 set.seed(1)
 
@@ -567,10 +573,8 @@ heatmap <- Heatmap(
 # Print heatmap
 set.seed(1)
 heatmap = draw(heatmap)
-
-# Close the pdf
-#dev.off()
 ```
+\newpage
 We observe that the two clusters correspond to cold and hot tumors, although the separation is not very clear, suggesting that there might be moderately infiltrated tumors. To further investigate, a Differentially Expressed Genes (DEG) analysis is also performed.
 
 ### Differentilly expressed genes analysis
@@ -597,21 +601,20 @@ group_cluster <- patient_clusters
 group_cluster$Cluster <- ifelse(group_cluster$Cluster == 1, "COLD", "HOT")
 
 # New row
-new_row <- setNames(rep(NA, ncol(df_CTA_immune_whole_clean_avg)), names(df_CTA_immune_whole_clean_avg))
+new_row <- setNames(rep(NA, ncol(df_CTA_immune_whole_clean_avg_102)), names(df_CTA_immune_whole_clean_avg_102))
 
 # Assign COLD and HOT
 for (i in seq_len(nrow(group_cluster))) {
     patient <- group_cluster$PatientID[i]
     cluster_value <- group_cluster$Cluster[i]
-    matching_cols <- grep(patient, names(df_CTA_immune_whole_clean_avg), value = TRUE)
+    matching_cols <- grep(patient, names(df_CTA_immune_whole_clean_avg_102), value = TRUE)
     new_row[matching_cols] <- cluster_value
 }
 
 # Add the new column
-df_whole_cold_hot_km2 <- rbind(new_row, df_CTA_immune_whole_clean_avg)
+df_whole_cold_hot_km2 <- rbind(new_row, df_CTA_immune_whole_clean_avg_102)
 
 # DEG analysis with limma
-rownames(df_CTA_immune_whole_clean_avg) <- df_CTA_immune_whole_clean_avg$SYMBOL
 df <- t(df_whole_cold_hot_km2)
 groups <- df[-c(1:3),1]
 
@@ -621,7 +624,7 @@ design  <-  model.matrix(~ 0 + f) # 0 to compare all pairwises
 colnames(design)  <-  c("COLD","HOT")
 
 # Fit the linear model
-data_fit <-  lmFit(df_CTA_immune_whole_clean_avg[-c(1,2,3)],design)
+data_fit <-  lmFit(df_CTA_immune_whole_clean_avg_102[-c(1,2,3)],design)
 
 # Define contrasts (HOT vs. COLD)
 contrast_matrix <- makeContrasts(HOT - COLD, levels = design)
@@ -647,12 +650,13 @@ EnhancedVolcano(res,
                 title = "Volcano plot with all genes",
                 subtitle = "Cluster 1 vs cluster 2 from heatmap k = 2, wo MHC")
 ```
+\newpage
 The DEG analysis reveals that there are DEGs, but the log2 fold changes (log2FC) are small. To focus on more significant differences, we set a log2FC threshold of 0.8. There are 83 genes with a log2FC > 1 or < -1 and an adjusted p-value < 0.01.
+
 
 ## 3) Clustering k-means with k = 4
 Given the presence of moderately infiltrated tumors, we perform k-means clustering with k = 4.
 ```{r, fig.cap="Heatmap with k-means clustering (k = 4) of immune cells expression (n = 102)"}
-#pdf("../results/figures/heatmaps/heatmap_kmeans_4.pdf", width = 8, height = 6)
 set.seed(1)
 
 # Generates heatmap
@@ -675,8 +679,9 @@ heatmap_km4 <- Heatmap(
 )
 set.seed(1)
 heatmap_km4 = draw(heatmap_km4)
-#dev.off()
+
 ```
+\newpage
 We observe that the two extreme clusters (COLD and HOT) are clearly separated, with a mix of intermediate clusters in between. To investigate further, we perform a DEG analysis on the extreme clusters.
 
 ### a- Differentilly expressed genes analysis
@@ -700,7 +705,8 @@ extreme_patient_clusters <- patient_clusters[patient_clusters$Cluster == 1 | pat
 # Annotate clusters
 group_cluster <- extreme_patient_clusters
 group_cluster$Cluster <- ifelse(group_cluster$Cluster == 1, "HOT", "COLD")
-df_extr <- df_CTA_immune_whole_clean_avg[, group_cluster$PatientID]
+df_extr <- df_CTA_immune_whole_clean_avg_102[, group_cluster$PatientID]
+rownames(df_extr) <- rownames(df_extr)
 
 # Stock COLD and HOT
 new_row <- setNames(rep(NA, ncol(df_extr)), names(df_extr))
@@ -738,7 +744,7 @@ res_sign <- topTable(data_fit_eb, adjust="BH", sort.by="P",number =Inf,p.value=0
 
 # Select CTA
 deg <- rownames(res)
-cta <- df_CTA_immune_whole_clean_avg %>%
+cta <- df_CTA_immune_whole_clean_avg_102 %>%
   filter(CTA != "NA") %>%
   filter(!grepl("^(NA,)*NA$", CTA))
 cta <- rownames(cta)
@@ -759,6 +765,7 @@ EnhancedVolcano(res,
                 title = "Volcano plot with all genes",
                 subtitle = "Cluster HOT vs cluster COLD from heatmap k = 4, wo MHC")
 ```
+\newpage
 
 ```{r, fig.width=8, fig.height=8, fig.cap="Volcano plot ofdifferentially expressed CTA between C1 and C4 (from fig. 13)"}
 # Volcano plot for CTA genes
@@ -774,7 +781,7 @@ EnhancedVolcano(res_cta,
                 title = "Volcano plot with CTA genes",
                 subtitle = "Cluster HOT vs cluster COLD from heatmap k = 4, wo MHC")
 ```
-
+\newpage
 The first volcano plot considers all genes, with thresholds of 0.01 for adjusted p-value and 0.8 for log2FC. There are 74 DEGs with log2FC > 2 or < -2 and an adjusted p-value < 0.01. The second plot show 4 differentially expressed CTA genes.
 
 ### b- Verification of the intensities differences
@@ -795,9 +802,11 @@ boxplot(data_vector ~ df_sdk2[,1],
         border = "black",
         names = c("COLD", "HOT"))
 ```
+\newpage
 SDK2 appears to be more expressed in COLD tumors.
 
 #### ii) Histogram of intensities for each genes
+
 To further visualize the intensity distribution across all genes:
 ```{r, fig.cap="Histogram of the average intensities for all genes"}
 hist(res$AveExpr, main = "Histogram of the average intensities for all genes", xlab =  "Average expression")
@@ -813,22 +822,19 @@ In this section, we integrate MHC (Major Histocompatibility Complex) genes due t
 df_MHC <- read.table("../data/MHC_genes.txt", sep = "\t", header = TRUE, check.names = FALSE)
 
 # Take MHC genes
-df_expr_MHC <- merge(df_MHC, df_CTA_immune_whole_clean_z_scores, by.x = "SYMBOL")
+df_expr_MHC <- merge(df_MHC, df_CTA_immune_whole_clean_z_scores_102, by.x = "SYMBOL")
 ```
 
 ## 1) MHC genes expression
 First, we load and merge the MHC gene data with the existing dataset of immune cell signatures.
 ```{r, fig.cap="Heatmap of MHC genes expression (n = 102)"}
 # Heatmap
-#pdf("../results/figures/heatmaps/heatmap_expression_mhc.pdf", width = 8, height = 6)
-#set.seed(1)
 heatmap_data_mhc <- as.matrix(df_expr_MHC[,-c(1,2,3,4)])
 rownames(heatmap_data_mhc) <- df_expr_MHC[,1]
 mhc_type <- df_expr_MHC$Type 
 row_name_colors <- ifelse(mhc_type == "MHC I", "green", "black")
 
 # Heatmap
-set.seed(1)
 Heatmap(
   as.matrix(heatmap_data_mhc),
   cluster_rows = TRUE,
@@ -844,8 +850,9 @@ Heatmap(
   row_names_gp = gpar(fontsize = 7, col = row_name_colors),
   heatmap_legend_param = list(title = "Expression Level")
 )
-#dev.off()
+
 ```
+\newpage
 From the heatmap, we observe that HLA-DRB does not exhibit the same expression pattern as the other MHC genes.
 
 ## 2) MHC genes and immune cells signatures
@@ -857,7 +864,6 @@ df_MHC_imm_sign <- read.table("../results/imm_sign_mhc_genes_avg_z_scores.tsv", 
 heatmap_data_mhc_all <- as.data.frame(df_MHC_imm_sign)
 rownames(heatmap_data_mhc_all) <- heatmap_data_mhc_all$Signature
 heatmap_data_mhc_all <- heatmap_data_mhc_all[ , -1]  # Remove the Signature column
-#pdf("../results/figures/heatmaps/heatmap_imm_mhc_kmeans4.pdf")
 
 # Generates heatmap
 set.seed(1)
@@ -881,8 +887,9 @@ heatmap_km4_mhc_all <- Heatmap(
 
 set.seed(1)
 heatmap_km4_mhc_all <- draw(heatmap_km4_mhc_all)
-#dev.off()
+
 ```
+\newpage
 The heatmap here indicates similar clustering patterns as before, which suggests that adding MHC genes does not drastically change the overall structure of the immune cell signatures. However, we observe distinct expression profiles for MHC types, particularly MHC I genes.
 
 ### DEG of all patients with MHC clustering with clustering k-means (k = 4)
@@ -906,7 +913,7 @@ extreme_patient_clusters_mhc <- patient_clusters[patient_clusters$Cluster == 1 |
 # Annotate clusters
 group_cluster <- extreme_patient_clusters_mhc
 group_cluster$Cluster <- ifelse(group_cluster$Cluster == 1, "HOT", "COLD")
-df_extr <- df_CTA_immune_whole_clean_avg[, group_cluster$PatientID]
+df_extr <- df_CTA_immune_whole_clean_avg_102[, group_cluster$PatientID]
 
 # Stock COLD and HOT
 new_row <- setNames(rep(NA, ncol(df_extr)), names(df_extr))
@@ -941,7 +948,7 @@ res <- topTable(data_fit_eb, adjust="BH", sort.by="P",number =Inf)
 
 # Select CTA
 deg <- rownames(res)
-cta <- df_CTA_immune_whole_clean_avg %>%
+cta <- df_CTA_immune_whole_clean_avg_102 %>%
   filter(CTA != "NA") %>%
   filter(!grepl("^(NA,)*NA$", CTA))
 cta <- rownames(cta)
@@ -967,7 +974,7 @@ res_whole <- res[res$logFC>2 | res$logFC < -2,]
 res_whole <- res_whole[res_whole$P.Value < 0.01,]
 #write.table(res_whole[order(res_whole$logFC),], file = "../results/DEG_tables/deg_k4_mhc_14_indiv.tsv", quote = FALSE, sep = "\t")
 ```
-
+\newpage
 ```{r, fig.width=8, fig.height=8, fig.cap="Volcano plot of differentially expressed CTA between C1 and C4 (from fig. 19)"}
 EnhancedVolcano(res_cta,
                 lab = rownames(res_cta),
@@ -982,6 +989,9 @@ EnhancedVolcano(res_cta,
                 subtitle = "Cluster HOT vs cluster COLD from heatmap k = 4, with MHC")
 res_cta[(res_cta$logFC>1 | res_cta$logFC < -1) & res_cta$P.Value < 0.05,]
 ```
+
+\newpage
+
 The differential expression analysis shows a similar set of differentially expressed CTA genes as before, suggesting that the inclusion of MHC genes does not substantially alter the CTA gene expression profile between the HOT and COLD clusters. However, there are still notable differences in the immune landscape of the two groups.
 
 \newpage
@@ -989,15 +999,33 @@ The differential expression analysis shows a similar set of differentially expre
 # IV. Relative immune cells expression without dedifferentiated and benign patients
 In this section, we focus on the immune cells expression data, excluding dedifferentiated and benign patients, and perform clustering to investigate the infiltrated tumors or not.
 ```{r}
-heatmap_data_mhc_all_conv <- heatmap_data_mhc_all[, patients_conv]
-df_expr_conv <- df_CTA_immune_whole_clean_avg[, patients_conv]
+# Read complete data with mhc annotation
+df_complete <- read.table("../results/matrix_complete_intensities.tsv", sep = "\t", header = TRUE, check.names = FALSE)
+
+df_complete_73 <- df_complete[, c("Signature", "CTA", colnames(df_complete)[colnames(df_complete) %in% patients_conv])]
+
+# Average the expression between same immune cells types
+# Take rows with immune cells signature from normalized data
+df_avg_immune_sign_73 <- df_complete_73 %>%
+  filter(Signature != "NA")
+
+# Group by signature and calculate mean of expression values
+df_avg_immune_sign_final_73 <- as.data.frame(df_avg_immune_sign_73 %>%
+  select(-c(CTA)) %>% 
+  group_by(Signature) %>%
+  summarise(across(where(is.numeric), \(x) mean(x, na.rm = TRUE))))
+
+rownames(df_avg_immune_sign_final_73) <- df_avg_immune_sign_final_73$Signature
+df_avg_immune_sign_final_73 <- df_avg_immune_sign_final_73[,-1]
+
+df_imm_z_scores_73 <- t(scale(t(df_avg_immune_sign_final_73)))
 ```
 
 ## 1) Clustering with kmeans, k = 2 on columns
-```{r, fig.cap="Heatmap with k-means clustering (k = 2) of immune cells expression (+ MHC) (n = 82)"}
+```{r, fig.cap="Heatmap with k-means clustering (k = 2) of immune cells expression (+ MHC) (n = 73)"}
 set.seed(1)
 heatmap_km2_conv <- Heatmap(
-    as.matrix(heatmap_data_mhc_all_conv),
+    as.matrix(df_imm_z_scores_73),
     cluster_rows = FALSE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -1015,6 +1043,7 @@ heatmap_km2_conv <- Heatmap(
 )
 heatmap_km2_conv <- draw(heatmap_km2_conv)
 ```
+\newpage
 The heatmap here visualizes immune cell expression for two clusters identified by K-means. We expect clearer clustering than in the previous all-patient dataset, which will allow us to perform more accurate differential expression analysis.
 
 ### DEG analysis
@@ -1025,7 +1054,7 @@ column_clusters <- column_order(heatmap_km2_conv)
 # Loop through each cluster to store patient IDs
 cluster_list <- list()
 for (i in 1:length(column_clusters)) {
-cluster_data <- data.frame(PatientID = colnames(as.matrix(heatmap_data_mhc_all_conv))[column_clusters[[i]]],
+cluster_data <- data.frame(PatientID = colnames(as.matrix(df_imm_z_scores_73))[column_clusters[[i]]],
   Cluster = i)
   cluster_list[[i]] <- cluster_data
 }
@@ -1040,18 +1069,18 @@ group_cluster <- patient_clusters
 group_cluster$Cluster <- ifelse(group_cluster$Cluster == 1, "COLD", "HOT")
 
 # New row
-new_row <- setNames(rep(NA, ncol(df_expr_conv)), names(df_expr_conv))
+new_row <- setNames(rep(NA, ncol(df_CTA_immune_whole_clean_avg_73[, -c(1, 2)])), names(df_CTA_immune_whole_clean_avg_73[, -c(1, 2)]))
 
 # Assign COLD and HOT
 for (i in seq_len(nrow(group_cluster))) {
     patient <- group_cluster$PatientID[i]
     cluster_value <- group_cluster$Cluster[i]
-    matching_cols <- grep(patient, names(df_expr_conv), value = TRUE)
+    matching_cols <- grep(patient, names(df_CTA_immune_whole_clean_avg_73[, -c(1, 2)]), value = TRUE)
     new_row[matching_cols] <- cluster_value
 }
 
 # Add the new column
-df_whole_cold_hot_km2_conv <- rbind(new_row, df_expr_conv)
+df_whole_cold_hot_km2_conv <- rbind(new_row, df_CTA_immune_whole_clean_avg_73[, -c(1, 2)])
 
 # DEG
 groups <- df_whole_cold_hot_km2_conv[1,]
@@ -1062,7 +1091,7 @@ design  <-  model.matrix(~ 0 + f) # 0 to compare all pairwises
 colnames(design)  <-  c("COLD","HOT")
 
 # Fit the linear model
-data_fit <-  lmFit(df_expr_conv,design)
+data_fit <-  lmFit(df_CTA_immune_whole_clean_avg_73[, -c(1, 2)],design)
 
 # Define contrasts (HOT vs. COLD)
 contrast_matrix <- makeContrasts(HOT - COLD, levels = design)
@@ -1088,6 +1117,7 @@ EnhancedVolcano(res,
                 title = "Volcano plot with all genes",
                 subtitle = "Cluster 1 vs cluster 2 from heatmap k = 2, with MHC")
 ```
+\newpage
 
 ```{r, fig.width=8, fig.height=8, fig.cap="Volcano plot of differentially expressed CTA between C1 and C2 (from fig. 22)"}
 EnhancedVolcano(res_cta,
@@ -1102,14 +1132,15 @@ EnhancedVolcano(res_cta,
                 title = "Volcano plot with CTA genes",
                 subtitle = "Cluster 1 vs cluster 2 from heatmap k = 2, wth MHC")
 ```
+\newpage
 Thanks to volcano plots, we see that there is DEG between the 2 groups. For the CTA, we retrieve BUB1 and PBK over expressed in cold tumors. This 2 CTA are interesting because in the literature, researchers have defined these like pan cancer targets.
 
 
 ## 2) Clustering with kmeans, k = 4
-```{r, fig.cap="Heatmap with k-means clustering (k = 4) of immune cells expression (+ MHC) (n = 82)"}
+```{r, fig.cap="Heatmap with k-means clustering (k = 4) of immune cells expression (+ MHC) (n = 73)"}
 set.seed(1)
 Heatmap(
-    as.matrix(heatmap_data_mhc_all_conv),
+    as.matrix(df_imm_z_scores_73),
     cluster_rows = FALSE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -1126,13 +1157,14 @@ Heatmap(
     heatmap_legend_param = list(title = "Expression Level")
 )
 ```
+\newpage
 Here, the clustering isn't better than with all patients so I didn't analyze the DEG.
 
 ## 3) Clustering with k = 3
-```{r, fig.cap="Heatmap with k-means clustering (k = 3) of immune cells expression (+ MHC) (n = 82)"}
+```{r, fig.cap="Heatmap with k-means clustering (k = 3) of immune cells expression (+ MHC) (n = 73)"}
 set.seed(1)
 heatmap_conv_k3 <- Heatmap(
-    as.matrix(heatmap_data_mhc_all_conv),
+    as.matrix(df_imm_z_scores_73),
     cluster_rows = FALSE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -1151,6 +1183,7 @@ heatmap_conv_k3 <- Heatmap(
 set.seed(1)
 heatmap_conv_k3 <- draw(heatmap_conv_k3)
 ```
+\newpage
 We see a HOT cluster (C3), a COLD (C1) and an intermediate. We will investigate DEG to see the differences between each cluters
 
 ### DEG analysis
@@ -1175,7 +1208,7 @@ colnames(design) <- c("C1", "C2", "C3")
 colnames(design) <- make.names(colnames(design))
 
 # Fit the linear model
-data_fit <-  lmFit(df_expr_conv,design)
+data_fit <-  lmFit(df_CTA_immune_whole_clean_avg_73[, -c(1, 2)],design)
 
 # Define contrasts (HOT vs. COLD)
 contrast_matrix <- makeContrasts(C1_vs_C2 = C2 - C1,
@@ -1207,6 +1240,7 @@ EnhancedVolcano(resultats$C1_vs_C2,
                 title = "Volcano plot with all genes",
                 subtitle = "C1 vs C2")
 ```
+\newpage
 Between C1 and C2, there is no DEG, because we can considered this cluster HOT and moderately infiltrated.
 
 ```{r, fig.width=8, fig.height=8, fig.cap="Volcano plot of DEG between C2 and C3 (from fig. 26) "}
@@ -1222,7 +1256,7 @@ EnhancedVolcano(resultats$C2_vs_C3,
                 title = "Volcano plot with all genes",
                 subtitle = "C2 vs C3")
 ```
-
+\newpage
 ```{r, fig.width=8, fig.height=8, fig.cap="Volcano plot of DEG between C1 and C3 (from fig. 26) "}
 EnhancedVolcano(resultats$C1_vs_C3,
                 lab = rownames(resultats$C1_vs_C3),
@@ -1236,14 +1270,14 @@ EnhancedVolcano(resultats$C1_vs_C3,
                 title = "Volcano plot with all genes",
                 subtitle = "C3 vs C1")
 ```
+\newpage
 Between C1 and C3, there is 2 DEG, so there is not really differences so the approach is'nt very good.
 
 ## 4) Clustering on the rows
 ### a- Hierarchical clustering
-```{r, fig.cap="Heatmap and hierarchical clustering on relative immune cells expression (+ MHC) (n = 82)"}
-set.seed(1)
+```{r, fig.cap="Heatmap and hierarchical clustering on relative immune cells expression (+ MHC) (n = 73)"}
 Heatmap(
-    as.matrix(heatmap_data_mhc_all_conv),
+    as.matrix(df_imm_z_scores_73),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -1258,13 +1292,14 @@ Heatmap(
     heatmap_legend_param = list(title = "Expression Level")
 )
 ```
+\newpage
 We see that some immune cells are grouping, certain have a clear expression differences between patients.
 
 ### b- Kmeans k = 2
-```{r, fig.cap="Heatmap with k-means clustering (k = 2) on relative immune cells expression (+ MHC) (n = 82)"}
+```{r, fig.cap="Heatmap with k-means clustering (k = 2) on relative immune cells expression (+ MHC) (n = 73)"}
 set.seed(1)
 Heatmap(
-    as.matrix(heatmap_data_mhc_all_conv),
+    as.matrix(df_imm_z_scores_73),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -1281,13 +1316,14 @@ Heatmap(
     heatmap_legend_param = list(title = "Expression Level")
 )
 ```
+\newpage
 We see that the C2 there is more a binary separation than C1.
 
 ### c- Kmeans k = 3
-```{r, fig.cap="Heatmap with k-means clustering (k = 3) on relative immune cells expression (+ MHC) (n = 82)"}
+```{r, fig.cap="Heatmap with k-means clustering (k = 3) on relative immune cells expression (+ MHC) (n = 73)"}
 set.seed(1)
 Heatmap(
-    as.matrix(heatmap_data_mhc_all_conv),
+    as.matrix(df_imm_z_scores_73),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -1304,13 +1340,14 @@ Heatmap(
     heatmap_legend_param = list(title = "Expression Level")
 )
 ```
+\newpage
 Here, it is not very clear.
 
 ### d- Kmeans k = 4
-```{r, fig.cap="Heatmap with k-means clustering (k = 4) on relative immune cells expression (+ MHC) (n = 82)"}
+```{r, fig.cap="Heatmap with k-means clustering (k = 4) on relative immune cells expression (+ MHC) (n = 73)"}
 set.seed(1)
 Heatmap(
-    as.matrix(heatmap_data_mhc_all_conv),
+    as.matrix(df_imm_z_scores_73),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -1327,13 +1364,12 @@ Heatmap(
     heatmap_legend_param = list(title = "Expression Level")
 )
 ```
-
+\newpage
 
 ## 3) Hierarchical clustering
-```{r, fig.cap="Heatmap and hierarchical clustering of relative immune cells expression (+ MHC) (n = 82)"}
-set.seed(1)
+```{r, fig.cap="Heatmap and hierarchical clustering of relative immune cells expression (+ MHC) (n = 73)"}
 Heatmap(
-    as.matrix(heatmap_data_mhc_all_conv),
+    as.matrix(df_imm_z_scores_73),
     cluster_rows = FALSE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -1348,8 +1384,51 @@ Heatmap(
     heatmap_legend_param = list(title = "Expression Level")
 )
 ```
+\newpage
 This clustering show the COLD and HOT tumors. But at this moment, we see that some cell types have immunosuppressive effects so it is negative in hot tumor for example. So I can test by delete immunosupressive cells to see "real" hot and cold tumors.
 
+
+##4) Clustering conventional patients with survival data
+```{r, fig.cap="Heatmap with k-means clustering (k = 2) on relative immune cells expression (+ MHC) (n = 63)"}
+df_complete_63 <- df_complete[, c("Signature", "CTA", colnames(df_complete)[colnames(df_complete) %in% df_metadata_surv_conv$Patient])]
+
+# Average the expression between same immune cells types
+# Take rows with immune cells signature from normalized data
+df_avg_immune_sign_63 <- df_complete_63 %>%
+  filter(Signature != "NA")
+
+# Group by signature and calculate mean of expression values
+df_avg_immune_sign_final_63 <- as.data.frame(df_avg_immune_sign_63 %>%
+  select(-c(CTA)) %>% 
+  group_by(Signature) %>%
+  summarise(across(where(is.numeric), \(x) mean(x, na.rm = TRUE))))
+rownames(df_avg_immune_sign_final_63) <- df_avg_immune_sign_final_63$Signature
+df_avg_immune_sign_final_63 <- df_avg_immune_sign_final_63[,-1]
+
+# Compute z scores
+df_imm_z_scores_63 <- t(scale(t(df_avg_immune_sign_final_63)))
+#write.table(df_imm_z_scores_63, "../results/imm_sign_z_scores_63.tsv", sep = "\t", quote = F)
+
+# Heatmap
+set.seed(1)
+Heatmap(
+    as.matrix(df_imm_z_scores_63),
+    cluster_rows = FALSE,    
+    cluster_columns = TRUE,
+    cluster_column_slices = TRUE,
+    clustering_distance_columns = "euclidean",
+    clustering_method_columns = "complete",
+    show_column_dend = TRUE,
+    column_km = 2, # Number of clusters
+    column_km_repeats = 20,
+    col = colorRamp2(seq(-8, 8, length.out = 100), colors),  
+    border = NA,             
+    show_column_names = TRUE,
+    column_names_gp = gpar(fontsize = 4),
+    row_names_gp = gpar(fontsize = 7),
+    heatmap_legend_param = list(title = "Expression Level")
+)
+```
 \newpage
 
 # V. Relative immune cells expression without immunosuppressive cells
@@ -1381,6 +1460,7 @@ Heatmap(
     heatmap_legend_param = list(title = "Expression Level")
 )
 ```
+\newpage
 The extreme patients seems to be the same with immunosupp cells. Now, I want to see the expression for the 2 immunosupp cells.
 
 ## 2) Expression of immunosuppressive cells
@@ -1451,7 +1531,6 @@ multiomics_colors <- c("C1" = "#F1C40F",
                        "C6" = "#1B5E20")
 
 # Heatmap
-#pdf("../results/figures/heatmaps/heatmap_complete_annotated.pdf", height = 10, width = 15)
 set.seed(1)
 heatmap_anno_all <- Heatmap(
     as.matrix(heatmap_data_mhc_all),
@@ -1488,7 +1567,7 @@ heatmap_anno_all <- Heatmap(
 )
 set.seed(1)
 heatmap_anno_all <- draw(heatmap_anno_all)
-#dev.off()
+
 
 
 # Store clusters
@@ -1510,16 +1589,16 @@ df_indiv_clusters_hm_anno <- data.frame(
 # Save
 #write.table(df_indiv_clusters_hm_anno, file = "../results/clusters_indiv/clusters_all_indiv_mhc.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
 ```
+\newpage
 We see in the cluster 4 dedifferentiated, G2 and benign histology. In C1, we retrieve G3, G2 and some dediff. In C2 and C3, there is more G2 and G1 with some benign and dediff. We kwnow that dediff are generally bad diagnosis but here we see that they are infiltrated. So this could be induce errors.
 
 ## 2) Adding metadata on heatmap with conventional patients
 ### a- k = 2
-```{r, fig.height=8, fig.width=15, fig.cap="Heatmap (from fig. 22) with metadata (n = 82)"}
+```{r, fig.height=8, fig.width=15, fig.cap="Heatmap (from fig. 22) with metadata (n = 73)"}
 # Heatmap
-#pdf("../results/figures/heatmaps/heatmap_complete_annotated_conv_patients.pdf", height = 10, width = 15)
 set.seed(1)
 heatmap_anno_conv <- Heatmap(
-    as.matrix(heatmap_data_mhc_all_conv),
+    as.matrix(df_imm_z_scores_73),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -1553,32 +1632,32 @@ heatmap_anno_conv <- Heatmap(
 )
 set.seed(1)
 heatmap_anno_conv <- draw(heatmap_anno_conv)
-#dev.off()
+
 
 # Store clusters
 # Take col indexes
 indiv_clust <- column_order(heatmap_anno_conv)
 
 # Create table with indiv names
-df_indiv_clusters_hm_anno <- data.frame(
+df_indiv_clusters_hm_anno_63 <- data.frame(
   Cluster = c(rep(1, length(indiv_clust$`1`)), 
               rep(2, length(indiv_clust$`2`))),
-  Patient = c(colnames(heatmap_data_mhc_all_conv)[indiv_clust$`1`],
-            colnames(heatmap_data_mhc_all_conv)[indiv_clust$`2`])
+  Patient = c(colnames(df_imm_z_scores_73)[indiv_clust$`1`],
+            colnames(df_imm_z_scores_73)[indiv_clust$`2`])
 )
 
 # Save
-#write.table(df_indiv_clusters_hm_anno, file = "../results/clusters_conv_indiv_mhc.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
+#write.table(df_indiv_clusters_hm_anno_63, file = "../results/clusters_indiv/clusters_conv_indiv_mhc.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
 ```
+\newpage
 We see 2 distinct clusers but the limit is not binary. However, we see that there is more G3 in C1 than C2.
 
 ### b- k = 3
-```{r, fig.height=8, fig.width=15, fig.cap="Heatmap (from fig. 26) with metadata (n = 82)"}
+```{r, fig.height=8, fig.width=15, fig.cap="Heatmap (from fig. 26) with metadata (n = 73)"}
 # Heatmap
-#pdf("../results/figures/heatmaps/heatmap_complete_annotated_conv_patients.pdf", height = 10, width = 15)
 set.seed(1)
 heatmap_anno_conv <- Heatmap(
-    as.matrix(heatmap_data_mhc_all_conv),
+    as.matrix(df_imm_z_scores_73),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -1612,21 +1691,171 @@ heatmap_anno_conv <- Heatmap(
 )
 set.seed(1)
 heatmap_anno_conv <- draw(heatmap_anno_conv)
-#dev.off()
+
 ```
+\newpage
 We see 2 distinct clusters, the limit is more clear than k = 2. We see, one cluster COLD, another HOT and the last is more or less infiltrated.
 
+## 3) Adding metadata on heatmap with conventional patients that have survival data
+```{r, fig.height=8, fig.width=15, fig.cap="Heatmap with k=2 with metadata (n = 63)"}
+metadata_surv_conv <- subset(df_metadata_conv, df_metadata_conv$OS.delay != "NA")
+set.seed(1)
+Heatmap(
+    as.matrix(df_imm_z_scores_63),
+    cluster_rows = TRUE,    
+    cluster_columns = TRUE,
+    cluster_column_slices = TRUE,
+    show_column_dend = TRUE,
+    show_row_dend = TRUE,
+    column_km = 2, # Number of clusters
+    column_km_repeats = 20,
+    col = colorRamp2(seq(-8, 8, length.out = 100), colors),  
+    border = NA,             
+    show_column_names = TRUE,
+    column_names_gp = gpar(fontsize = 4),
+    row_names_gp = gpar(fontsize = 7),
+    heatmap_legend_param = list(title = "Expression Level"),
+    top_annotation = columnAnnotation(
+      Histology = metadata_surv_conv$Histology,
+      Subtype = metadata_surv_conv$EXP.subtype,
+      Methy_subtype = metadata_surv_conv$METH.subtype,
+      miRNA_subtype = metadata_surv_conv$MIR.simplifiedSubtype,
+      Multiomics_subtype = metadata_surv_conv$MOM.subtype,
+      IDH1_mut = ifelse(metadata_surv_conv$IDH1.AAmut != "wt", "mut", metadata_surv_conv$IDH1.AAmut),
+      IDH2_mut = ifelse(metadata_surv_conv$IDH2.AAmut != "wt", "mut", metadata_surv_conv$IDH2.AAmut),
+      TP53 = metadata_surv_conv$TP53,
+      col = list(Histology = histology_colors,
+                 Subtype = subtype_colors,
+                 Methy_subtype = methy_colors,
+                 miRNA_subtype = mir_colors,
+                 Multiomics_subtype = multiomics_colors,
+                 IDH1_mut = idh_colors,
+                 IDH2_mut = idh_colors,
+                 TP53 = tp53_colors))
+)
+```
 \newpage
 
+## 4) Adding CTA heatmaps metadata
+### a) Figure 6
+```{r, fig.height=6, fig.width=10, fig.cap="Significant CTAs heatmap (from fig.6) with metadata (n = 63)"}
+Heatmap(as.matrix(data_cta_63),
+    cluster_rows = TRUE,    
+    cluster_columns = TRUE,
+    cluster_column_slices = TRUE,
+    clustering_distance_columns = "euclidean",
+    clustering_method_columns = "complete",
+    show_column_dend = TRUE,
+    col = colorRamp2(seq(-8, 8, length.out = 100), colors),  
+    border = NA,             
+    show_column_names = TRUE,
+    show_row_names = TRUE,
+    column_title = "Heatmap of CTA with significant survival impact",
+    column_names_gp = gpar(fontsize = 4),
+    row_names_gp = gpar(fontsize = 2),
+    heatmap_legend_param = list(title = "Expression Level"),
+    top_annotation = columnAnnotation(
+      Histology = metadata_surv_conv$Histology,
+      Subtype = metadata_surv_conv$EXP.subtype,
+      Methy_subtype = metadata_surv_conv$METH.subtype,
+      miRNA_subtype = metadata_surv_conv$MIR.simplifiedSubtype,
+      Multiomics_subtype = metadata_surv_conv$MOM.subtype,
+      IDH1_mut = ifelse(metadata_surv_conv$IDH1.AAmut != "wt", "mut", metadata_surv_conv$IDH1.AAmut),
+      IDH2_mut = ifelse(metadata_surv_conv$IDH2.AAmut != "wt", "mut", metadata_surv_conv$IDH2.AAmut),
+      TP53 = metadata_surv_conv$TP53,
+      col = list(Histology = histology_colors,
+                 Subtype = subtype_colors,
+                 Methy_subtype = methy_colors,
+                 miRNA_subtype = mir_colors,
+                 Multiomics_subtype = multiomics_colors,
+                 IDH1_mut = idh_colors,
+                 IDH2_mut = idh_colors,
+                 TP53 = tp53_colors))
+)
+```
+
+### b) Figure 7
+```{r, fig.height=6, fig.width=10, fig.cap="Selected significant CTAs heatmap (from fig.7) with metadata (n = 63)"}
+Heatmap(as.matrix(data_selected_CTA_conv_63),
+    cluster_rows = TRUE,    
+    cluster_columns = TRUE,
+    cluster_column_slices = TRUE,
+    clustering_distance_columns = "euclidean",
+    clustering_method_columns = "complete",
+    col = colorRamp2(seq(-8, 8, length.out = 100), colors),  
+    border = NA,
+    show_column_names = TRUE,
+    show_row_names = TRUE,
+    column_title = "Heatmap of selected CTA with significant survival impact",
+    column_names_gp = gpar(fontsize = 4),
+    row_names_gp = gpar(fontsize = 2),
+    heatmap_legend_param = list(title = "Expression Level"),
+    top_annotation = columnAnnotation(
+      Histology = metadata_surv_conv$Histology,
+      Subtype = metadata_surv_conv$EXP.subtype,
+      Methy_subtype = metadata_surv_conv$METH.subtype,
+      miRNA_subtype = metadata_surv_conv$MIR.simplifiedSubtype,
+      Multiomics_subtype = metadata_surv_conv$MOM.subtype,
+      IDH1_mut = ifelse(metadata_surv_conv$IDH1.AAmut != "wt", "mut", metadata_surv_conv$IDH1.AAmut),
+      IDH2_mut = ifelse(metadata_surv_conv$IDH2.AAmut != "wt", "mut", metadata_surv_conv$IDH2.AAmut),
+      TP53 = metadata_surv_conv$TP53,
+      col = list(Histology = histology_colors,
+                 Subtype = subtype_colors,
+                 Methy_subtype = methy_colors,
+                 miRNA_subtype = mir_colors,
+                 Multiomics_subtype = multiomics_colors,
+                 IDH1_mut = idh_colors,
+                 IDH2_mut = idh_colors,
+                 TP53 = tp53_colors))
+)
+```
+
+
+### c) Figure 8
+```{r, fig.height=4, fig.width= 8, fig.cap="Not selected ignificant CTAs heatmap (from fig.8) with metadata (n = 63)"}
+Heatmap(as.matrix(data_non_selected_CTA_63),
+    cluster_rows = TRUE,    
+    cluster_columns = TRUE,
+    cluster_column_slices = TRUE,
+    clustering_distance_columns = "euclidean",
+    clustering_method_columns = "complete",
+    col = colorRamp2(seq(-8, 8, length.out = 100), colors),  
+    border = NA,
+    show_column_names = TRUE,
+    show_row_names = TRUE,
+    column_title = "Heatmap of other selected CTA with significant survival impact",
+    column_names_gp = gpar(fontsize = 4),
+    row_names_gp = gpar(fontsize = 2),
+    heatmap_legend_param = list(title = "Expression Level"),
+    top_annotation = columnAnnotation(
+      Histology = metadata_surv_conv$Histology,
+      Subtype = metadata_surv_conv$EXP.subtype,
+      Methy_subtype = metadata_surv_conv$METH.subtype,
+      miRNA_subtype = metadata_surv_conv$MIR.simplifiedSubtype,
+      Multiomics_subtype = metadata_surv_conv$MOM.subtype,
+      IDH1_mut = ifelse(metadata_surv_conv$IDH1.AAmut != "wt", "mut", metadata_surv_conv$IDH1.AAmut),
+      IDH2_mut = ifelse(metadata_surv_conv$IDH2.AAmut != "wt", "mut", metadata_surv_conv$IDH2.AAmut),
+      TP53 = metadata_surv_conv$TP53,
+      col = list(Histology = histology_colors,
+                 Subtype = subtype_colors,
+                 Methy_subtype = methy_colors,
+                 miRNA_subtype = mir_colors,
+                 Multiomics_subtype = multiomics_colors,
+                 IDH1_mut = idh_colors,
+                 IDH2_mut = idh_colors,
+                 TP53 = tp53_colors))
+)
+```
+
 # VII. Expression analysis benign vs others
-In this part, we want to see the exxpression deifferences between all the histology types.
+In this part, we want to see the expression differences between all the histology types.
 
 ## 1) PCA to see groups
 ```{r, fig.cap="PCA plot with histology type (n = 102)"}
 # Perform PCA to see the groups by histology
 df_metadata_histo <- df_metadata[, c("Patient", "Histology")]
-df_indiv <- as.data.frame(t(df_CTA_immune_whole_clean_avg[,-c(1:3)]))
-df_indiv_zscores <- as.data.frame(t(df_CTA_immune_whole_clean_z_scores[,-c(1:3)]))
+df_indiv <- as.data.frame(t(df_CTA_immune_whole_clean_avg_102[,-c(1:3)]))
+df_indiv_zscores <- as.data.frame(t(df_CTA_immune_whole_clean_z_scores_102[,-c(1:3)]))
 histo <- factor(df_metadata_histo$Histology)
 pca <- prcomp(df_indiv, scale. = TRUE)
 pca_plot(pca, histo, TRUE)
@@ -1643,7 +1872,7 @@ colnames(design) <- c("benign", "malignant")
 colnames(design) <- make.names(colnames(design))
 
 # Fit the linear model
-data_fit <-  lmFit(df_CTA_immune_whole_clean_avg[,-c(1:3)],design)
+data_fit <-  lmFit(df_CTA_immune_whole_clean_avg_102[,-c(1:2)],design)
 
 # Define contrasts
 contrast_matrix <- makeContrasts(benign - malignant, levels = design)
@@ -1669,7 +1898,7 @@ EnhancedVolcano(res,
                 title = "Volcano plot with all genes",
                 subtitle = "benign vs malignant")
 ```
-
+\newpage
 ```{r, fig.width=7, fig.height=7, fig.cap="Volcano plot of differentially expressed CTA between benign and malignant tumors"}
 # Volcano plot CTA
 EnhancedVolcano(res_cta,
@@ -1684,6 +1913,7 @@ EnhancedVolcano(res_cta,
                 title = "Volcano plot with CTA genes",
                 subtitle = "benign vs malignant")
 ```
+\newpage
 The DEG are over expressed in benign so we can't conclude something clearly.
 
 ## 3) DEG analysis between all the groups
@@ -1695,7 +1925,7 @@ colnames(design) <- c("benign", "dedifferentiated", "G1", "G2", "G3", "na")
 colnames(design) <- make.names(colnames(design))
 
 # Fit the linear model
-data_fit <-  lmFit(df_CTA_immune_whole_clean_avg[,-c(1:3)],design)
+data_fit <-  lmFit(df_CTA_immune_whole_clean_avg_102[,-c(1:2)],design)
 
 # Define contrasts (HOT vs. COLD)
 contrast_matrix <- makeContrasts(benign_vs_dediff = benign - dedifferentiated,
@@ -1733,7 +1963,7 @@ EnhancedVolcano(resultats$benign_vs_dediff,
                 title = "Volcano plot with all genes",
                 subtitle = "benign vs dediff")
 ```
-
+\newpage
 ```{r, fig.width=7, fig.height=7, fig.cap="Volcano plot of DEG between benign and G1"}
 # Volcano plot benign vs G1
 EnhancedVolcano(resultats$benign_vs_G1,
@@ -1748,7 +1978,7 @@ EnhancedVolcano(resultats$benign_vs_G1,
                 title = "Volcano plot with all genes",
                 subtitle = "benign vs G1")
 ```
-
+\newpage
 ```{r, fig.width=7, fig.height=7, fig.cap="Volcano plot of DEG between benign and G2"}
 # Volcano plot benign vs G2
 EnhancedVolcano(resultats$benign_vs_G2,
@@ -1763,7 +1993,7 @@ EnhancedVolcano(resultats$benign_vs_G2,
                 title = "Volcano plot with all genes",
                 subtitle = "benign vs G2")
 ```
-
+\newpage
 ```{r, fig.width=7, fig.height=7, fig.cap="Volcano plot of DEG between benign and G3"}
 # Volcano plot benign vs G3
 EnhancedVolcano(resultats$benign_vs_G3,
@@ -1790,8 +2020,7 @@ This section generates heatmaps by crossing CTA expression and immune cell types
 ### a- Hierarchical clustering
 ```{r, fig.height=6, fig.width=8, fig.cap="Heatmap of CTA that impact survival analysis and immune cells expression (n = 63)"}
 # Create the heatmap
-set.seed(1)
-heatmap_cta_signif_conv_sorted <- Heatmap(t(data_selected_CTA_conv),
+heatmap_cta_signif_conv_sorted <- Heatmap(t(data_selected_CTA_conv_63),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -1808,7 +2037,7 @@ heatmap_cta_signif_conv_sorted <- Heatmap(t(data_selected_CTA_conv),
 
 # Kmeans heatmap
 ht_k2_conv <- Heatmap(
-    as.matrix(t(heatmap_data_mhc_all_conv[, colnames(heatmap_data_mhc_all_conv) %in% df_metadata_surv_conv$Patient])),
+    as.matrix(t(df_imm_z_scores_63[, colnames(df_imm_z_scores_63)])),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -1826,16 +2055,17 @@ ht_k2_conv <- Heatmap(
 )
 heatmap_cta_signif_conv_sorted + ht_k2_conv 
 ```
+\newpage
 This heatmap show that the cluster with an over expression of some CTA are from many patients that have the lowest immune cell types expression. So, visually, we can see a link between the 2 analysis.
 
 ### b- Kmeans clustering
 ```{r, fig.cap="Heatmap with kmeans clustering of CTA that impact survival analysis and immune cells expression (n = 63)"}
 set.seed(1)
-kmeans_result <- kmeans(t(heatmap_data_mhc_all_conv[, colnames(heatmap_data_mhc_all_conv) %in% df_metadata_surv_conv$Patient]), centers = 2, nstart = 25)  # 2 clusters
+kmeans_result <- kmeans(t(data_cta_63), centers = 2, nstart = 25)  # 2 clusters
 
 # CTA heatmap
 ht_cta <- Heatmap(
-  t(data),
+  t(data_cta_63),
   cluster_rows = TRUE,   
   cluster_columns = TRUE,
   cluster_column_slices = TRUE,
@@ -1854,7 +2084,7 @@ ht_cta <- Heatmap(
 
 # kmeans heatmap
 ht_k2_conv <- Heatmap(
-    as.matrix(t(heatmap_data_mhc_all_conv[, colnames(heatmap_data_mhc_all_conv) %in% df_metadata_surv_conv$Patient])),
+    as.matrix(t(df_imm_z_scores_63)),
     cluster_rows = TRUE,    
     cluster_columns = TRUE,
     cluster_column_slices = TRUE,
@@ -1870,17 +2100,18 @@ ht_k2_conv <- Heatmap(
     row_names_gp = gpar(fontsize = 4))
 ht_cta + ht_k2_conv 
 ```
+\newpage
 With kmeans k = 2 on the patients like previous heatmap (IV.1), we confirm the previous conclusion that there are a link for some patients between expression of CTA and immune cell infiltration. Now, we will try to quantify this co-expression.
 
 ## 2) Weighted correlation network analysis (WGCNA)
 The R package WGCNA allows to see this co-expression between genes. So here, we want to observe the link between CTA genes that have an impact on the survival for conventional chondrosarcoma and the immune cell infiltration. 
 ```{r, fig.height=8, fig.width=10, fig.cap="Dendrogram of conventionnal patients (from fig. 6)"}
 # Prepare data and select the CTA
-df <- as.data.frame(t(subset(df_CTA_immune_whole_clean_z_scores[,colnames(df_CTA_immune_whole_clean_z_scores) %in% df_metadata_surv_conv$Patient], rownames(df_CTA_immune_whole_clean_z_scores) %in% l_CTA_conv)))
+df <- as.data.frame(t(df_z_scores_63[rownames(df_z_scores_63) %in% l_CTA_conv, -c(1, 2)]))
 
 # Immune cells data
-rownames(df_indiv_clusters_hm_anno) <- df_indiv_clusters_hm_anno$Patient
-df_imm_data <- as.data.frame(t(heatmap_data_mhc_all_conv[, colnames(heatmap_data_mhc_all_conv) %in% df_metadata_surv_conv$Patient]))
+rownames(df_indiv_clusters_hm_anno_63) <- df_indiv_clusters_hm_anno_63$Patient
+df_imm_data <- as.data.frame(t(df_imm_z_scores_63))
 
 # Re-cluster samples
 sample_hclust <- hclust(dist(df), method = "ward.D")
@@ -1958,6 +2189,7 @@ plot(dendro, xlab = "", sub = "",
      main = "Gene Clustering on TOM-based disssimilarity", 
      labels = FALSE, hang = 0.04)
 ```
+\newpage
 We can suppose that the middle cluster correspond to the middle cluster on the heatmap.
 
 ```{r, fig.cap="Dendogram with module detection"}
@@ -1979,6 +2211,7 @@ plotDendroAndColors(dendro, dynamic_colors, "Dynamic Tree Cut",
                     addGuide = TRUE, guideHang = 0.05, 
                     main = "Gene dendrogram and module colors")
 ```
+\newpage
 We see 2 groups, the blue seems to correspond to the middle cluster.
 
 ### c- Relationship between gene modules and immune cell types: Correlation heatmap
@@ -1999,7 +2232,6 @@ module_cor_pval = corPvalueStudent(modules_cor, n_samples)
 text <- paste(signif(modules_cor, 2), "\n(", signif(module_cor_pval, 1), ")", sep = "")
 dim(text) <- dim(modules_cor)
 
-#pdf("../results/figures/heatmaps/heatmap_corr_cta_signif_conv.pdf", height = 8, width = 15)
 # Display the correlation values within a heatmap
 par(mar = c(8, 6, 3, 3))  # Ajuster les marges (bas, gauche, haut, droite)
 labeledHeatmap(Matrix = modules_cor, 
@@ -2013,8 +2245,9 @@ labeledHeatmap(Matrix = modules_cor,
                cex.text = 0.5,
                zlim = c(-1,1),
                main = paste("Module-trait Relationships"))
-#dev.off()
+
 ```
+\newpage
 This pearson correlation matrix shows that there is a positive correlation between th2 cells and blue group, and for MHC I, MHC II, macrophages, Mast cells, T cells, Tem, Tgd and DC cells there is a negative correlation.
 
 ```{r, fig.cap="Heatmap of CTA colored with modules"}
@@ -2029,7 +2262,7 @@ modules_colors <- c("grey"= "grey",
                   "turquoise" = "turquoise")
 
 # Heatmap
-Heatmap(data,
+Heatmap(data_cta_63,
         cluster_rows = TRUE,    
         cluster_columns = TRUE,
         cluster_column_slices = TRUE,
@@ -2049,16 +2282,13 @@ Heatmap(data,
         heatmap_legend_param = list(title = "Expression Level")
 )
 ```
-
+\newpage
 
 ## 3) Pearson correlation for conventional chondrosarcomas
 ### a- Selected CTA
-```{r, fig.cap="Pearson correlation matrix between selected CTA and immune cells expression (n = 63)"}
-# Take immune celles data
-sign_imm <- heatmap_data_mhc_all_conv[, colnames(heatmap_data_mhc_all_conv) %in% df_metadata_surv_conv$Patient]
-
+```{r, fig.width=8, fig.cap="Pearson correlation matrix between selected CTA and immune cells expression (n = 63)"}
 # Pearson correlation and p-value compute
-cor_matrix <- cor(t(sign_imm), t(data_selected_CTA_conv), method = "pearson")
+cor_matrix <- cor(t(df_imm_z_scores_63), t(data_selected_CTA_conv_63), method = "pearson")
 cor_pval <- corPvalueStudent(cor_matrix, 63)
 
 # Significant p-val
@@ -2073,7 +2303,7 @@ Heatmap(cor_matrix,
         clustering_distance_columns = "euclidean",
         clustering_method_columns = "complete",
         show_column_dend = TRUE,
-        column_names_gp = gpar(fontsize = 4),
+        column_names_gp = gpar(fontsize = 2),
         row_names_gp = gpar(fontsize = 5),
         col = colorRamp2(seq(-1, 1, length.out = 100), colors),    
         heatmap_legend_param = list(title = "Pearson coefficient"),
@@ -2084,20 +2314,101 @@ Heatmap(cor_matrix,
         }
 )
 ```
+\newpage
 
 ### b- All CTA significant
-```{r, fig.cap="Pearson correlation matrix between significant CTA and immune cells expression (n = 63)"}
-data <- matrix_expr_cta[rownames(matrix_expr_cta) %in% l_CTA_conv, colnames(matrix_expr_cta) %in% df_metadata_surv_conv$Patient]
+```{r, fig.width=8, fig.cap="Pearson correlation matrix between significant CTA and immune cells expression (n = 63)"}
+data <- df_z_scores_63[rownames(df_z_scores_63) %in% l_CTA_conv, -c(1,2)]
 
 # Pearson correlation and p-value compute
-cor_matrix <- cor(t(sign_imm), t(data), method = "pearson")
+cor_matrix <- cor(t(df_imm_z_scores_63), t(data), method = "pearson")
 cor_pval <- corPvalueStudent(cor_matrix, 63)
 
 # Significant p-val
 pval_signif <- cor_pval < 0.05
 
 # Heatmap
-colors <- colorRampPalette(c("#75E05A", "white", "#EA4343"))(100)
+Heatmap(cor_matrix, 
+        cluster_rows = TRUE,    
+        cluster_columns = TRUE,
+        cluster_column_slices = TRUE,
+        clustering_distance_columns = "euclidean",
+        clustering_method_columns = "complete",
+        show_column_dend = TRUE,
+        column_names_gp = gpar(fontsize = 2),
+        row_names_gp = gpar(fontsize = 5),
+        col = colorRamp2(seq(-1, 1, length.out = 100), colors),    
+        heatmap_legend_param = list(title = "Pearson coefficient"),
+        cell_fun = function(j, i, x, y, width, height, fill) {
+          if (pval_signif[i, j]) {
+            grid.text("*", x, y, gp = gpar(fontsize = 8, col = "black"))
+          }
+        }
+)
+```
+\newpage
+
+### c) All CTA
+```{r, fig.height=10, fig.width=10, fig.cap="Pearson correlation matrix between all CTAs and conventional chondrosarcomas (n = 63)"}
+data <- subset(df_z_scores_63, df_z_scores_63$CTA == "CTA")
+data <- data[, -c(1,2)]
+
+# Pearson correlation and p-value compute
+cor_matrix <- cor(t(df_imm_z_scores_63), t(data), method = "pearson")
+cor_pval <- corPvalueStudent(cor_matrix, 63)
+
+# Significant p-val
+pval_signif <- cor_pval < 0.05
+
+# Heatmap
+#pdf("../results/figures/other_plots/correlation_matrix_all_CTA_63.pdf", height = 6, width = 20)
+heatmap_all_cta_corr_63 <- Heatmap(cor_matrix, 
+        cluster_rows = TRUE,    
+        cluster_columns = TRUE,
+        cluster_column_slices = TRUE,
+        clustering_distance_columns = "euclidean",
+        clustering_method_columns = "complete",
+        show_column_dend = TRUE,
+        column_names_gp = gpar(fontsize = 2),
+        row_names_gp = gpar(fontsize = 5),
+        col = colorRamp2(seq(-1, 1, length.out = 100), colors),    
+        heatmap_legend_param = list(title = "Pearson coefficient"),
+        cell_fun = function(j, i, x, y, width, height, fill) {
+          if (pval_signif[i, j]) {
+            grid.text("*", x, y, gp = gpar(fontsize = 8, col = "black"))
+          }
+        }
+)
+heatmap_all_cta_corr_63 <- draw(heatmap_all_cta_corr_63)
+#dev.off()
+```
+\newpage
+```{r}
+# Store clusters HOT and COLD
+cta_clust <- column_order(heatmap_all_cta_corr_63)
+
+# Create table with cta
+df_cta_clusters_hm <- data.frame(
+  Cluster = c(rep("HOT", length(cta_clust[1:404])), 
+              rep("COLD", length(cta_clust[405:843]))),
+  SYMBOL = c(rownames(data)[cta_clust[1:404]],
+            rownames(data)[cta_clust[405:843]]))
+
+# Save
+#write.table(df_cta_clusters_hm, file = "../results/clusters_indiv/clusters_cta_pearson_63.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
+```
+
+
+### d) Not selected CTA
+```{r, fig.cap="Pearson correlation matrix between non selected significant CTAs and patients with survival data (n = 63)"}
+# Pearson and p-value compute
+cor_matrix <- cor(t(df_imm_z_scores_63), t(data_non_selected_CTA_63), method = "pearson")
+cor_pval <- corPvalueStudent(cor_matrix, ncol(data_non_selected_CTA_63))
+
+# Significant p-value
+significant_mask <- cor_pval < 0.05
+
+# Heatmap
 Heatmap(cor_matrix, 
         cluster_rows = TRUE,    
         cluster_columns = TRUE,
@@ -2110,7 +2421,7 @@ Heatmap(cor_matrix,
         col = colorRamp2(seq(-1, 1, length.out = 100), colors),    
         heatmap_legend_param = list(title = "Pearson coefficient"),
         cell_fun = function(j, i, x, y, width, height, fill) {
-          if (pval_signif[i, j]) {
+          if (significant_mask[i, j]) {
             grid.text("*", x, y, gp = gpar(fontsize = 8, col = "black"))
           }
         }
@@ -2119,19 +2430,35 @@ Heatmap(cor_matrix,
 
 ## 4) Pearson correlation for all chondrosarcomas
 ### a- Selected CTA
-```{r, fig.cap="Pearson correlation matrix between selected CTA and immune cells expression (n = 82)"}
+```{r,fig.width=8, fig.cap="Pearson correlation matrix between selected CTA and immune cells expression (n = 82)"}
 # Take data
-sign_imm <- heatmap_data_mhc_all[, colnames(heatmap_data_mhc_all) %in% df_metadata_surv_all$Patient]
+df_complete_82 <- df_complete[, c("Signature", "CTA", colnames(df_complete)[colnames(df_complete) %in% df_metadata_surv_all$Patient])]
+
+# Average the expression between same immune cells types
+# Take rows with immune cells signature from normalized data
+df_avg_immune_sign_82 <- df_complete_82 %>%
+  filter(Signature != "NA")
+
+# Group by signature and calculate mean of expression values
+df_avg_immune_sign_final_82 <- as.data.frame(df_avg_immune_sign_82 %>%
+  select(-c(CTA)) %>% 
+  group_by(Signature) %>%
+  summarise(across(where(is.numeric), \(x) mean(x, na.rm = TRUE))))
+
+rownames(df_avg_immune_sign_final_82) <- df_avg_immune_sign_final_82$Signature
+df_avg_immune_sign_final_82 <- df_avg_immune_sign_final_82[,-1]
+
+df_imm_z_scores_82 <- t(scale(t(df_avg_immune_sign_final_82)))
+#write.table(df_imm_z_scores_82, "../results/imm_sign_z_scores_82.tsv", sep = "\t", quote = F)
 
 # Pearson and p-value compute
-cor_matrix <- cor(t(sign_imm), t(data_selected_CTA_all), method = "pearson")
+cor_matrix <- cor(t(df_imm_z_scores_82), t(data_selected_CTA_all), method = "pearson")
 cor_pval <- corPvalueStudent(cor_matrix, ncol(data_selected_CTA_all))
 
 # Significant p-value
 significant_mask <- cor_pval < 0.05
 
 # Heatmap
-colors <- colorRampPalette(c("#75E05A", "white", "#EA4343"))(100)
 Heatmap(cor_matrix, 
         cluster_rows = TRUE,    
         cluster_columns = TRUE,
@@ -2139,36 +2466,113 @@ Heatmap(cor_matrix,
         clustering_distance_columns = "euclidean",
         clustering_method_columns = "complete",
         show_column_dend = TRUE,
-        column_names_gp = gpar(fontsize = 4),
+        column_names_gp = gpar(fontsize = 2),
         row_names_gp = gpar(fontsize = 5),
         col = colorRamp2(seq(-1, 1, length.out = 100), colors),    
         heatmap_legend_param = list(title = "Pearson coefficient"),
         cell_fun = function(j, i, x, y, width, height, fill) {
-          # Ajouter une étoile pour les p-values significatives (p < 0.05)
           if (significant_mask[i, j]) {
             grid.text("*", x, y, gp = gpar(fontsize = 8, col = "black"))
           }
         }
 )
 ```
+\newpage
 
 ### b- All significant CTA
-```{r, fig.cap="Pearson correlation matrix between signaificant CTA and immune cells expression (n = 82)"}
-# Take data
-sign_imm <- heatmap_data_mhc_all[, colnames(heatmap_data_mhc_all) %in% df_metadata_surv_all$Patient]
-
-data <- matrix_expr_cta[rownames(matrix_expr_cta) %in% l_CTA_all, colnames(matrix_expr_cta) %in% df_metadata_surv_all$Patient]
-
-
+```{r, fig.width=8, fig.cap="Pearson correlation matrix between signaificant CTA and immune cells expression (n = 82)"}
 # Pearson and p-value compute
-cor_matrix <- cor(t(sign_imm), t(data), method = "pearson")
-cor_pval <- corPvalueStudent(cor_matrix, ncol(data_selected_CTA_all))
+cor_matrix <- cor(t(df_imm_z_scores_82), t(data_all_82), method = "pearson")
+cor_pval <- corPvalueStudent(cor_matrix, ncol(data_all_82))
 
 # Significant p-value
 significant_mask <- cor_pval < 0.05
 
 # Heatmap
-colors <- colorRampPalette(c("#75E05A", "white", "#EA4343"))(100)
+Heatmap(cor_matrix, 
+        cluster_rows = TRUE,    
+        cluster_columns = TRUE,
+        cluster_column_slices = TRUE,
+        clustering_distance_columns = "euclidean",
+        clustering_method_columns = "complete",
+        show_column_dend = TRUE,
+        column_names_gp = gpar(fontsize = 2),
+        row_names_gp = gpar(fontsize = 5),
+        col = colorRamp2(seq(-1, 1, length.out = 100), colors),    
+        heatmap_legend_param = list(title = "Pearson coefficient"),
+        cell_fun = function(j, i, x, y, width, height, fill) {
+          if (significant_mask[i, j]) {
+            grid.text("*", x, y, gp = gpar(fontsize = 8, col = "black"))
+          }
+        }
+)
+```
+\newpage
+
+
+### c) All CTA
+```{r, fig.height=10, fig.width=10, fig.cap="Pearson correlation matrix between all CTAs and patients with survival data (n = 82)"}
+data <- subset(df_z_scores_82, df_z_scores_82$CTA == "CTA")
+data <- data[, -c(1,2)]
+
+# Pearson correlation and p-value compute
+cor_matrix <- cor(t(df_imm_z_scores_82), t(data), method = "pearson")
+cor_pval <- corPvalueStudent(cor_matrix, 82)
+
+# Significant p-val
+pval_signif <- cor_pval < 0.05
+
+# Heatmap
+#pdf("../results/figures/other_plots/correlation_matrix_all_CTA_82.pdf", height = 6, width = 25)
+heatmap_all_cta_corr_82 <- Heatmap(cor_matrix, 
+        cluster_rows = TRUE,    
+        cluster_columns = TRUE,
+        cluster_column_slices = TRUE,
+        clustering_distance_columns = "euclidean",
+        clustering_method_columns = "complete",
+        show_column_dend = TRUE,
+        column_names_gp = gpar(fontsize = 2),
+        row_names_gp = gpar(fontsize = 5),
+        col = colorRamp2(seq(-1, 1, length.out = 100), colors),    
+        heatmap_legend_param = list(title = "Pearson coefficient"),
+        cell_fun = function(j, i, x, y, width, height, fill) {
+          if (pval_signif[i, j]) {
+            grid.text("*", x, y, gp = gpar(fontsize = 8, col = "black"))
+          }
+        }
+)
+heatmap_all_cta_corr_82 <- draw(heatmap_all_cta_corr_82)
+#dev.off()
+```
+\newpage
+
+```{r}
+# Store clusters HOT and COLD
+cta_clust <- column_order(heatmap_all_cta_corr_82)
+
+# Create table with cta
+df_cta_clusters_hm <- data.frame(
+  Cluster = c(rep("HOT", length(cta_clust[1:464])), 
+              rep("Immune suppressed", length(cta_clust[465:574])),
+              rep("COLD", length(cta_clust[575:843]))),
+  SYMBOL = c(rownames(data)[cta_clust[1:464]],
+             rownames(data)[cta_clust[465:574]],
+            rownames(data)[cta_clust[575:843]]))
+
+# Save
+#write.table(df_cta_clusters_hm, file = "../results/clusters_indiv/clusters_cta_pearson_82.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
+```
+
+### d) Not selected CTA
+```{r, fig.cap="Pearson correlation matrix between non selected significant CTAs and patients with survival data (n = 82)"}
+# Pearson and p-value compute
+cor_matrix <- cor(t(df_imm_z_scores_82), t(data_non_selected_CTA_82), method = "pearson")
+cor_pval <- corPvalueStudent(cor_matrix, ncol(data_non_selected_CTA_82))
+
+# Significant p-value
+significant_mask <- cor_pval < 0.05
+
+# Heatmap
 Heatmap(cor_matrix, 
         cluster_rows = TRUE,    
         cluster_columns = TRUE,
@@ -2181,7 +2585,6 @@ Heatmap(cor_matrix,
         col = colorRamp2(seq(-1, 1, length.out = 100), colors),    
         heatmap_legend_param = list(title = "Pearson coefficient"),
         cell_fun = function(j, i, x, y, width, height, fill) {
-          # Ajouter une étoile pour les p-values significatives (p < 0.05)
           if (significant_mask[i, j]) {
             grid.text("*", x, y, gp = gpar(fontsize = 8, col = "black"))
           }

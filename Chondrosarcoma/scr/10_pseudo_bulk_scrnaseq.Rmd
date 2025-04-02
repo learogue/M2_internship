@@ -1,5 +1,5 @@
 ---
-title: "Bulk analysis"
+title: "Pseudo bulk chondrosarcoma analysis"
 author: "Léa ROGUE"
 output:
   pdf_document:
@@ -23,13 +23,16 @@ opts_chunk$set(
 
 \newpage
 
-```{r}
+This script analyze pseudo bulk scRNAseq the same manner tha microarry part to see if it is coherent and to see the ifiltrated tumors or not..
+
+# Load libraries
+```{r, results='hide', message=FALSE, warning=FALSE}
 library(dplyr)
 library(ComplexHeatmap)
 library(colorRamp2)
 ```
 
-
+# Read data
 ```{r}
 df_tpm <- read.table("../results/matrix_pseudo_bulk_tpm_normalized.tsv", sep = "\t", header = TRUE, check.names = F)
 
@@ -38,9 +41,12 @@ df_CTA <- read.table("../data/CTA_list_clean.txt", header = FALSE)
 
 # Read immune cells
 df_immune_sign <- read.table("../data/immune_cells_mhc_genes.tsv", header = FALSE, sep = "\t")
+
+# Read list of CTA that impact survival probabilities
+l_CTA_conv <- read.table("../data/CTA_signif_coxph_conv_indiv.txt", sep = "\t", header = FALSE)$V1
 ```
 
-
+# Prepare data
 ```{r}
 df_tpm$CTA <-  NA
 
@@ -87,16 +93,13 @@ df_avg_immune_sign_final <- df_avg_immune_sign %>%
 ```
 
 
-
-```{r}
+# I. Relative immune cells expression
+```{r, fig.cap="Relative immune cells expression heatmap"}
 # Create the heatmap
 heatmap_data <- as.data.frame(df_avg_immune_sign_final)
 rownames(heatmap_data) <- heatmap_data$Signature
 heatmap_data <- heatmap_data[ , -1]  # Remove the Signature column
-
 heatmap_data <- log2(heatmap_data+1)
-
-
 
 # Calculate Z-scores
 z_scores_row <- t(scale(t(heatmap_data)))
@@ -122,6 +125,38 @@ Heatmap(
     heatmap_legend_param = list(title = "Expression Level")
 )
 
+```
+We see that the more infiltrated tumors are dedifferentiated and low tumors, contrary to the less infiltrated that are high grade.
+
+# II. Relative expression of CTAs
+```{r, fig.height=12, fig.cap="Relative expression of CTAs"}
+# Create the heatmap
+cta_data <- subset(df_tpm_CTA, df_tpm_CTA$CTA == "CTA")
+rownames(cta_data) <- cta_data$SYMBOL
+cta_data <- cta_data[ , -c(1, 2)]
+cta_data <- log2(cta_data+1)
+
+# Calculate Z-scores
+z_scores_row <- t(scale(t(cta_data)))
+
+# Add columns
+df_z_scores <- as.data.frame(z_scores_row)
+
+Heatmap(
+    as.matrix(df_z_scores),
+    cluster_rows = TRUE,    
+    cluster_columns = TRUE,
+    cluster_column_slices = TRUE,
+    clustering_distance_columns = "euclidean",
+    clustering_method_columns = "complete",
+    show_column_dend = TRUE,
+    col = colorRamp2(seq(-8, 8, length.out = 100), colors),  
+    border = NA,             
+    show_column_names = TRUE,
+    column_names_gp = gpar(fontsize = 7),
+    row_names_gp = gpar(fontsize = 4),
+    heatmap_legend_param = list(title = "Expression Level")
+)
 ```
 
 

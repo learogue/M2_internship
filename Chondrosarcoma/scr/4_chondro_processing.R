@@ -94,7 +94,7 @@ df_CTA_whole <- merged_df_avg %>%
 
 # Reorganize columns
 df_CTA_whole <- df_CTA_whole %>%
-  select(SYMBOL, CTA, everything())
+  dplyr::select(SYMBOL, CTA, everything())
 
 # Read immune cells genes
 df_immune_sign <- read.table("../data/immune_cells_genes.tsv", header = FALSE, sep = "\t")
@@ -105,7 +105,7 @@ df_CTA_immune_sign_whole <- merge(df_CTA_whole, df_immune_sign, by.x = "SYMBOL",
 
 # Reorganize the columns if needed
 df_CTA_immune_sign_whole <- df_CTA_immune_sign_whole %>%
-  select(SYMBOL, CTA, Signature, everything())
+  dplyr::select(SYMBOL, CTA, Signature, everything())
 
 # Combine multiple signatures into one for each gene by concatenating with a comma
 df_CTA_immune_sign_whole_clean <- df_CTA_immune_sign_whole %>%
@@ -167,6 +167,7 @@ df_CTA_immune_sign_whole <- merge(df_CTA_whole, df_immune_sign, by.x = "SYMBOL",
 # Reorganize the columns if needed
 df_CTA_immune_sign_whole <- df_CTA_immune_sign_whole %>%
   select(SYMBOL, CTA, Signature, everything())
+write.table(df_CTA_immune_sign_whole, "../results/matrix_complete_intensities.tsv", sep = "\t", row.names = FALSE, quote = FALSE)
 
 # Average the expression between same immune cells types
 # Take rows with immune cells signature from normalized data
@@ -182,3 +183,4 @@ df_avg_immune_sign_final <- df_avg_immune_sign %>%
 # Z-scores
 df_avg_immune_sign_z_scores <- calculate_z_scores(df_avg_immune_sign_final, 1)
 write.table(df_avg_immune_sign_z_scores, file = "../results/imm_sign_mhc_genes_avg_z_scores.tsv", sep = "\t", row.names = FALSE, quote = FALSE)
+

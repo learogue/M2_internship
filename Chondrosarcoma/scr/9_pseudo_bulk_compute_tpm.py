@@ -4,7 +4,7 @@
 # Auteur  : Léa ROGUE
 # Date    : 26-03-2025
 # Description : This python script read anndata object, extract counts and summary it per samples. Next, lengths of genes are search and
-# calculated in gtf file. Then TPM are computed and saved
+# calculated in gtf file. Then TPM are computed and saved.
 # ----------------------------------------------------------------------------------------------------------------------------------------
 
 # Load libraries
@@ -16,7 +16,7 @@ import re
 from bioinfokit.analys import norm
 
 # Read object created with scRNAseq tool from my M1 internship
-adata = ad.read_h5ad("../data/object_merged_2.h5ad")
+adata = ad.read_h5ad("../results/sc_results/chondro_pseudo_bulk/Objects/Objects_merged/object_merged_1.h5ad")
 
 # Aggregate counts
 aggr = sc.get.aggregate(adata, by = 'dataset', func = 'sum')
