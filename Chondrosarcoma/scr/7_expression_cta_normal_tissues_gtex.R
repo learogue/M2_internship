@@ -27,7 +27,7 @@ df_tpm <- fread("../data/GTEx_Analysis_v10_RNASeQCv2.4.2_gene_tpm.gct.gz")
 
 # Select CTA
 cta <- (as.vector(read.table("../data/CTA_list_clean.txt", header = FALSE)))$V1
-housekp_genes <- c("EGFR", "HER2")
+housekp_genes <- c("EGFR", "ERBB2", "FOLH1", "SST")
 
 # Select data in TPM matrix
 df_expr_cta <- df_tpm[df_tpm$Description %in% cta | df_tpm$Description %in% housekp_genes,]
