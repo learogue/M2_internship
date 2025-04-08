@@ -23,7 +23,7 @@ opts_chunk$set(
 
 \newpage
 
-This script generates plots to see the expression of CTAs in normal tissues from GTEx project. This allow us to visualize the most tumor specific CTAs.
+This script generates plots to see the expression of CTAs in normal tissues from GTEx project. This allow us to visualize the most tumor specific CTAs. We added EGFR to compare with an housekeeping genes.
 
 # Load libraries
 ```{r, results='hide', message=FALSE, warning=FALSE}
@@ -31,6 +31,7 @@ library(ComplexHeatmap)
 library(dplyr)
 library(ggplot2)
 library(ggiraph)
+library(htmltools)
 ```
 
 # Load data
@@ -44,6 +45,9 @@ l_CTA_conv <- read.table("../data/CTA_signif_coxph_conv_indiv.txt", sep = "\t", 
 
 # Load intensities data
 df_int <- read.table("../results/whole_gene_int_CTA_sign_imm_clean.tsv", sep = "\t", row.names = 1, header = TRUE)
+
+# List of housekeeping genes
+housekp_genes <- c("EGFR", "ERBB2", "FOLH1", "SSTR1", "SSTR2", "SSTR3", "SSTR4", "SSTR5")
 ```
 
 # I. Expression of all the CTAs in normal tissues
@@ -117,7 +121,7 @@ We see that there is some groups that are not really expressed in normal tissues
 
 # III. Scatter plot of CTAs intensities and their expression in normal tissues.
 In this part, we want to see the less expressed CTAs in normal tissues and the more expressed CTAs in chondrosarcomas.
-```{r, fig.cap="Scatter plot of CTAs intensities and their expression in normal tissues"}
+```{r, fig.cap="Scatter plot of CTAs intensities and their expression in normal tissues with clustering colors from n = 63 (log10 scale)"}
 # add cluster info
 df_clust_cta_all <- read.table("../results/clusters_indiv/clusters_cta_signif_coxph_all_indiv.tsv", sep = "\t", header = TRUE)
 rownames(df_clust_cta_all) <- df_clust_cta_all$SYMBOL
@@ -129,6 +133,8 @@ colnames(df_clust_cta_all) <- c("Cluster_all", "SYMBOL")
 df_int_cta <- df_int %>%
   filter(CTA != "NA") %>%
   select(-Signature, -CTA)
+df_housekp_genes <- df_int[rownames(df_int) %in% housekp_genes,]
+df_int_cta <- rbind(df_int_cta, df_housekp_genes[, -c(1,2)])
 
 # Compute mean for each CTA for all patients
 df_mean_int_all <- as.data.frame(rowMeans(df_int_cta))
@@ -147,48 +153,102 @@ rownames(df_scatter) <- df_scatter$SYMBOL
 df_scatter <- df_scatter[, -1]
 colnames(df_scatter) <- c("Intensity", "Mean_expression_tissues", "Cluster_conv", "Cluster_all")
 
-# Save data
-#write.table(df_scatter, "../results/matrix_scatter_intensities_clusters.tsv", quote = F, sep = "\t")
-
 # Generate plot
-p <- ggplot(df_scatter,
+p_log10 <- ggplot(df_scatter,
             aes(x = Mean_expression_tissues, 
-                y = Intensity, color = Cluster_conv, 
-                tooltip = rownames(df_scatter),
-                data_id = rownames(df_scatter))) +
-            scale_x_log10() +
+                y = Intensity, color = Cluster_conv)) +
+            scale_x_log10()+
             geom_point_interactive(size = 1, hover_nearest = TRUE) +
             scale_color_manual(values = c("1" = "#3498DB", "2" = "#E74C3C", "3" = "#2ECC71"), 
                                na.value = "#dadada") +
-            labs(x = "Log10 TPM mean", y = "CTA intensities", color = "Cluster conv chs") +
+            labs(x = "Normal tissues expression (Log10 TPM mean)", y = "Chondrosarcoma CTA expression (intensities)", color = "Clustering gene\nimpacting survival\n(conventional CHS)") +
+            geom_label_repel_interactive(data = df_scatter[rownames(df_scatter) %in% housekp_genes, ], 
+                  aes(label = rownames(df_scatter)[rownames(df_scatter) %in% housekp_genes]),
+                  nudge_x = 0.8,
+                  nudge_y = -0.3,
+                  size = 3,
+                  color = "black") +             
+            theme_minimal()
+p_log10
+```
+
+```{r, fig.cap="Scatter plot of CTAs intensities and their expression in normal tissues with clustering colors from n = 63 (linear scale)"}
+p <- ggplot(df_scatter,
+            aes(x = Mean_expression_tissues, 
+                y = Intensity, color = Cluster_conv)) +
+            geom_point_interactive(size = 1, hover_nearest = TRUE) +
+            scale_color_manual(values = c("1" = "#3498DB", "2" = "#E74C3C", "3" = "#2ECC71"), 
+                               na.value = "#dadada") +
+            labs(x = "Normal tissues expression (Log10 TPM mean)", y = "Chondrosarcoma CTA expression (intensities)", color = "Clustering gene\nimpacting survival\n(conventional CHS)") +
+            geom_label_repel_interactive(data = df_scatter[rownames(df_scatter) %in% housekp_genes, ], 
+                  aes(label = rownames(df_scatter)[rownames(df_scatter) %in% housekp_genes]),
+                  nudge_x = 4,
+                  nudge_y = -0.5,
+                  size = 3,
+                  color = "black") +             
             theme_minimal()
 p
 
 # Generate html file with interactive plot
-interactive_plot <- girafe(ggobj = p)
-htmltools::save_html(interactive_plot, "../results/figures/other_plots/interactive_scatter_plot_expr_cta_gtex_conv_clust.html")
+interactive_plot_log10 <- girafe(ggobj = p_log10)
+interactive_plot_linear <- girafe(ggobj = p)
+html_content <- tagList(
+  div(style = "display: flex; justify-content: space-between;",
+      div(style = "width: 48%;", interactive_plot_log10),
+      div(style = "width: 48%;", interactive_plot_linear)
+  )
+)
+save_html(html_content, "../results/figures/other_plots/interactive_scatter_plot_expr_cta_gtex_conv_clust_combined.html")
 ```
 So, the interactive plot and the data permite us to select CTAs of interest in order to probe them in biological manipulations.
+\newpage
 
-```{r}
+```{r, fig.cap="Scatter plot of CTAs intensities and their expression in normal tissues with clustering colors from n = 82 (linear scale)"}
 # Generate plot
-p <- ggplot(df_scatter,
+p_log10 <- ggplot(df_scatter,
             aes(x = Mean_expression_tissues, 
-                y = Intensity, color = Cluster_all, 
-                tooltip = rownames(df_scatter),
-                data_id = rownames(df_scatter))) +
-            scale_x_log10() +
+                y = Intensity, color = Cluster_all)) +
+            scale_x_log10()+
             geom_point_interactive(size = 1, hover_nearest = TRUE) +
             scale_color_manual(values = c("1" = "#3498DB", "2" = "#E74C3C", "3" = "#2ECC71"), 
                                na.value = "#dadada") +
-            labs(x = "Log10 TPM mean", y = "CTA intensities", color = "Cluster all chs") +
+            labs(x = "Normal tissues expression (Log10 TPM mean)", y = "Chondrosarcoma CTA expression (intensities)", color = "Clustering gene\nimpacting survival\n(all types)") +            geom_label_repel_interactive(data = df_scatter[rownames(df_scatter) %in% housekp_genes, ], 
+                  aes(label = rownames(df_scatter)[rownames(df_scatter) %in% housekp_genes]),
+                  nudge_x = 0.8,
+                  nudge_y = -0.3,
+                  size = 3,
+                  color = "black") +             
+            theme_minimal()
+p_log10
+```
+
+```{r, fig.cap="Scatter plot of CTAs intensities and their expression in normal tissues with clustering colors from n = 82 (linear scale)"}
+p <- ggplot(df_scatter,
+            aes(x = Mean_expression_tissues, 
+                y = Intensity, color = Cluster_all)) +
+            geom_point_interactive(size = 1, hover_nearest = TRUE) +
+            scale_color_manual(values = c("1" = "#3498DB", "2" = "#E74C3C", "3" = "#2ECC71"), 
+                               na.value = "#dadada") +
+            labs(x = "Normal tissues expression (Log10 TPM mean)", y = "Chondrosarcoma CTA expression (intensities)", color = "Clustering gene\nimpacting survival\n(all types)") +
+            geom_label_repel_interactive(data = df_scatter[rownames(df_scatter) %in% housekp_genes, ], 
+                  aes(label = rownames(df_scatter)[rownames(df_scatter) %in% housekp_genes]),
+                  nudge_x = 4,
+                  nudge_y = -0.5,
+                  size = 3,
+                  color = "black") +             
             theme_minimal()
 p
 
 # Generate html file with interactive plot
-interactive_plot <- girafe(ggobj = p)
-htmltools::save_html(interactive_plot, "../results/figures/other_plots/interactive_scatter_plot_expr_cta_gtex_all_clust.html")
+interactive_plot_log10 <- girafe(ggobj = p_log10)
+interactive_plot_linear <- girafe(ggobj = p)
+html_content <- tagList(
+  div(style = "display: flex; justify-content: space-between;",
+      div(style = "width: 48%;", interactive_plot_log10),
+      div(style = "width: 48%;", interactive_plot_linear)
+  )
+)
+save_html(html_content, "../results/figures/other_plots/interactive_scatter_plot_expr_cta_gtex_all_clust_combined.html")
 ```
-
 
 
