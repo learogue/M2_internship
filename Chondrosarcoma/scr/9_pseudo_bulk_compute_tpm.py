@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ----------------------------------------------------------------------------------------------------------------------------------------
-# R script : Compute transcripts per million from pseudo-bulk scRNAseq
+# Python script : Compute transcripts per million from pseudo-bulk scRNAseq
 # Auteur  : Léa ROGUE
 # Date    : 26-03-2025
 # Description : This python script read anndata object, extract counts and summary it per samples. Next, lengths of genes are search and
