@@ -249,7 +249,7 @@ For all patients, we see that the hazard ratio (survival probabilities) are incr
 ### c- Kaplan-Meier plots
 This part compute Kaplan-Meier plot based on log rank test that use categorical data to see the trend of survival for the 2 groups (HIGH or LOW expression of the cell types)
 This shows the graph for each significant HR ratio previously computed with Cox model.
-```{r, fig.height=20, fig.width=15, fig.cap="Kaplan-Meier plots for immune cell types (n = 82)"}
+```{r, fig.height=10, fig.width=8, fig.cap="Kaplan-Meier plots for immune cell types (n = 82)"}
 #Create Kaplan-Meier plots with categorical data
 p1 <- plot_km(survfit(Surv(OS.delay, OS.event) ~ DC_cat, data = df_survival_all), df_survival_all)
 p2 <- plot_km(survfit(Surv(OS.delay, OS.event) ~ Eosinophils_cat, data = df_survival_all), df_survival_all)
@@ -294,7 +294,7 @@ So, we see that for th 12 significant genes, 10 have a ratio > 2 et only 2 genes
 
 ### e- Significative immune cells genes survival analysis
 Here, we repeat the previous step for the genes of all the significant immune cells.
-```{r, fig.height=15, fig.cap="Forest plot for significative immune cells (n = 82)"}
+```{r, fig.height=10, fig.cap="Forest plot for significative immune cells (n = 82)"}
 # List of immune cells type significant in coxph analysis
 l <- c("DC",  "Eosinophils", "Immune checkpoints", "TFH", "Th2 cells", "Treg", "aDC")
 
@@ -382,7 +382,7 @@ By using z-scores, pDC are now significant and have a good impact on survival pr
 
 ### c- Kaplan-Meier plots
 This shows the graph for each significant HR ratio more than significant to all patients to observe the differences.
-```{r, fig.height=20, fig.width=15, fig.cap="Kaplan-Meier plots for immune cell types (n = 63)"}
+```{r, fig.height=10, fig.width=8, fig.cap="Kaplan-Meier plots for immune cell types (n = 63)"}
 # Create Kaplan-Meier plots with categorical data
 p1 <- plot_km(survfit(Surv(OS.delay, OS.event) ~ DC_cat, data = df_survival_conv_cat), df_survival_conv_cat)
 p2 <- plot_km(survfit(Surv(OS.delay, OS.event) ~ Eosinophils_cat, data = df_survival_conv_cat), df_survival_conv_cat)
@@ -447,7 +447,7 @@ This section analyzes the impact of CTA on survival probabilites.
 
 ## 1) All chondrosarcoma types
 This part concern all the patients.
-```{r, fig.height=18, fig.cap="Forest plot for significant CTA (n = 82)"}
+```{r, fig.height=10, fig.cap="Forest plot for significant CTA (n = 82)"}
 # CTA data
 df_expr_cta_82 <- subset(df_z_scores_82, CTA == "CTA")
 df_expr_cta_82 <- df_expr_cta_82[,!colnames(df_expr_cta_82) %in% c("Signature", "CTA", "SYMBOL")]
@@ -471,7 +471,7 @@ This forest plot illustrates only the significant HR. We see here that there is 
 
 ### a- Intensities jitter plot for significant CTA
 In this section, we want to see the intensities per significant CTA to visualize.
-```{r, fig.width=15, fig.cap="Intensitites jitter plot for significant CTA (n = 82)"}
+```{r, fig.width=8, fig.cap="Intensitites jitter plot for significant CTA (n = 82)"}
 # Read intensities
 df <- df_CTA_immune_whole_clean_avg_82[, -c(1, 2)]
 df <- df[rownames(df) %in% res_cta_signif[,1],]
@@ -503,7 +503,7 @@ ggplot(df_long, aes(x = reorder(SYMBOL, -value), y = value, color = as.factor(Cl
 ```
 \newpage
 
-```{r, fig.width=15, fig.cap="Intensitites jitter plot for significant CTA (n = 82)"}
+```{r, fig.width=8, fig.cap="Intensitites jitter plot for significant CTA (n = 82)"}
 # Cluster data
 cluster_data <- read.table("../results/clusters_indiv/clusters_cta_signif_coxph_all_indiv.tsv", sep = "\t", header = TRUE)
 cluster_data$Cluster <- as.character(cluster_data$Cluster)
@@ -547,7 +547,7 @@ We see that with the intensities data that the p-val are the same as continuous 
 
 ## 2) Conventional chondrosarcomas
 This section like part I concerns conventional chondrosarcomas
-```{r, fig.height=15, fig.cap="Forest plot for significant CTA (n = 63)"}
+```{r, fig.height=10, fig.cap="Forest plot for significant CTA (n = 63)"}
 # CTA data
 # CTA data
 df_expr_cta_63 <- subset(df_z_scores_63, CTA == "CTA")
@@ -570,8 +570,8 @@ generate_forestplot(res_cta_signif, Type = FALSE)
 \newpage
 Same than previously, we see that there is more bad impact CTA than good. With this, we have also clustering these CTA to see groups and make another analysis.
 
-### Intensities jitter plot for significant CTA
-```{r, fig.width=15, fig.cap="Intensitites jitter plot for significant CTA (n = 63)"}
+### a- Itensities jitter plot for significant CTA
+```{r, fig.width=8, fig.cap="Intensitites jitter plot for significant CTA (n = 63)"}
 # Prepare data
 df <- df_CTA_immune_whole_clean_avg_63[, -c(1, 2)]
 df <- df[rownames(df) %in% res_cta_signif[,1],]
@@ -602,6 +602,59 @@ ggplot(df_long, aes(x = reorder(SYMBOL, -value), y = value, color = as.factor(Cl
 #dev.off()
 ```
 
+\newpage
+
+### b- KM plots selected CTA
+```{r, fig.height=10, fig.width=8, fig.cap="Kaplan-Meier plots for interested CTA (n = 63)"}
+df_expr_cta_63_select <- df_expr_cta_63[, c("OS.delay", "OS.event", "DTL", "HJURP", "GINS1", "PBK", "CTAG2", "CT45A1", "CSAG1", "PRAME")]
+
+genes <- colnames(df_expr_cta_63_select)[-(1:2)]
+
+# list of cutoff
+cut_list <- lapply(genes, function(gene) {
+  cut <- surv_cutpoint(df_expr_cta_63_select,
+                       time = "OS.delay",
+                       event = "OS.event",
+                       variables = gene,
+                       minprop = 0.3)
+  data.frame(gene = gene,
+             cutpoint = summary(cut)$cutpoint[[1]],
+             stringsAsFactors = FALSE)
+})
+
+# Combine
+cutpoints_df <- do.call(rbind, cut_list)
+
+# Add row
+df_cat_cta_63_select <- df_expr_cta_63_select
+
+for (col in colnames(df_cat_cta_63_select[, -c(1,2)])) {
+  threshold <- cutpoints_df$cutpoint[cutpoints_df$gene == col]
+  new_column_name <- paste0(col, "_cat")
+  df_cat_cta_63_select[[new_column_name]] <- ifelse(df_expr_cta_63_select[[col]] > threshold, "HIGH", "LOW")
+}
+
+# Replace space by _
+colnames(df_cat_cta_63_select) <- gsub(" ", "_", colnames(df_cat_cta_63_select))
+df_cat_cta_63_select$OS.delay <- df_expr_cta_63_select$OS.delay
+df_cat_cta_63_select$OS.event <- df_expr_cta_63_select$OS.event
+
+#Create Kaplan-Meier plots with categorical data
+p1 <- plot_km(survfit(Surv(OS.delay, OS.event) ~ DTL_cat, data = df_cat_cta_63_select), df_cat_cta_63_select)
+p2 <- plot_km(survfit(Surv(OS.delay, OS.event) ~ HJURP_cat, data = df_cat_cta_63_select), df_cat_cta_63_select)
+p3 <- plot_km(survfit(Surv(OS.delay, OS.event) ~ GINS1_cat, data = df_cat_cta_63_select), df_cat_cta_63_select)
+p4 <- plot_km(survfit(Surv(OS.delay, OS.event) ~ PBK_cat, data = df_cat_cta_63_select), df_cat_cta_63_select)
+p5 <- plot_km(survfit(Surv(OS.delay, OS.event) ~ CTAG2_cat, data = df_cat_cta_63_select), df_cat_cta_63_select)
+p6 <- plot_km(survfit(Surv(OS.delay, OS.event) ~ CT45A1_cat, data = df_cat_cta_63_select), df_cat_cta_63_select)
+p7 <- plot_km(survfit(Surv(OS.delay, OS.event) ~ CSAG1_cat, data = df_cat_cta_63_select), df_cat_cta_63_select)
+p8 <- plot_km(survfit(Surv(OS.delay, OS.event) ~ PRAME_cat, data = df_cat_cta_63_select), df_cat_cta_63_select)
+
+#pdf("../results/figures/other_plots/KM_plots_select_scatter_cta.pdf", height = 20, width = 15)
+grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, ncol = 2)
+#dev.off()
+```
+\newpage
+Here, we want to see and illustrate the survival probabilities of interested CTA targets.
 \newpage
 
 # III. Survival analysis for clusters from CTA heatmaps
