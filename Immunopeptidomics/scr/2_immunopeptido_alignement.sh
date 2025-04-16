@@ -11,3 +11,13 @@ blastp -query results/seq_pep.fasta -db data/db/targeted_cta_db -outfmt '6 qseqi
 
 # Select hits with 0 or 1 mismatchs
 awk -F'\t' '($13 == 0 || $13 == 1)' results/results_blastp_mismatch_eval_0_01.tsv > results/selected_results_blastp_mismatch_eval_0_01.tsv
+
+# Take gene names and sseid
+grep '^>' proteine_seq_targeted_cta.fasta | tr -d '>' | awk '{
+    for (i=1; i<=NF; i++) {
+        if ($i ~ /^GN=/) {
+            sub(/^GN=/, "", $i);
+            print $1, "\t", $i;
+        }
+    }
+}' > entry_name_gene_name.tsv 
