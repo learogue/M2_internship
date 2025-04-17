@@ -1,6 +1,16 @@
-#bin/bash/env python3
-# 15/04/2025
+#!/usr/bin/env python3
+# ----------------------------------------------------------------------------------------------------------------------
+# Python script : Integration and filtering of cancer-related epitopes from IEDB data
+# Author  : Léa ROGUE
+# Date    : 15-04-2025
+# Description : This script processes various IEDB database tables to extract epitopes associated with cancer in humans.
+# It begins by mapping disease IDs to their corresponding names, then filters T cell, B cell, and MHC epitope records
+# to retain only those related to cancer. It consolidates the results into a unified dataframe, merges them based on
+# shared epitope IDs, and links them with their corresponding amino acid sequences. Finally, the script saves the
+# resulting table as a TSV file for downstream analysis.
+# ----------------------------------------------------------------------------------------------------------------------
 
+# Import packages
 from collections import defaultdict
 import pandas as pd
 
@@ -11,12 +21,13 @@ with open('../results/db_tables/disease.tsv', 'r') as f:
         lig = lig.strip().split('\t')
         d_disease[lig[0]] = lig[1]
 
-# take tcell line with a cancer disease
+# Take tcell line with a cancer disease
 d_tcell = defaultdict(list)
 with open('../results/db_tables/t_cell.tsv', 'r') as f:
     for lig in f:
         lig = lig.strip().split('\t')
 
+        # Searching ids and save cancer associated disease
         disease_name = []
         for col in [3, 4, 5]:
             key = lig[col]
@@ -28,12 +39,13 @@ with open('../results/db_tables/t_cell.tsv', 'r') as f:
         if disease_name:
             d_tcell[lig[0]] = [lig[0], lig[1], lig[2]] + [", ".join(disease_name), "t_cell"]
 
-# take bcell line with a cancer disease
+# Take bcell line with a cancer disease
 d_bcell = defaultdict(list)
 with open('../results/db_tables/b_cell.tsv', 'r') as f:
     for lig in f:
         lig = lig.strip().split('\t')
 
+        # Searching ids and save cancer associated disease
         disease_name = []
         for col in [2, 3, 4]:
             key = lig[col]
