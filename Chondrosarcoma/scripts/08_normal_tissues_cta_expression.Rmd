@@ -30,8 +30,7 @@ This script generates plots to see the expression of CTAs in normal tissues from
 library(ComplexHeatmap)
 library(dplyr)
 library(ggplot2)
-library(ggiraph)
-library(htmltools)
+library(colorRamp2)
 ```
 
 # Functions
@@ -61,10 +60,10 @@ create_plot <- function(df_scatter, cluster_col, nudge_x, nudge_y){
   ggplot(df_scatter,
             aes(x = Mean_expression_tissues, 
                 y = Intensity, color = {{ cluster_col }})) +
-            geom_point_interactive(size = 1, hover_nearest = TRUE) +
+            geom_point(size = 1) +
             scale_color_manual(values = c("1" = "#3498DB", "2" = "#E74C3C", "3" = "#2ECC71"), 
                                na.value = "#dadada") +
-            geom_label_repel_interactive(data = df_scatter[rownames(df_scatter) %in% housekp_genes, ], 
+            geom_label(data = df_scatter[rownames(df_scatter) %in% housekp_genes, ], 
                   aes(label = rownames(df_scatter)[rownames(df_scatter) %in% housekp_genes]),
                   nudge_x = nudge_x,
                   nudge_y = nudge_y,
@@ -104,23 +103,50 @@ df_metadata_surv_conv <- na.omit(df_metadata_surv_conv)
 
 # I. Expression of all the CTAs in normal tissues
 This part show that these genes are CTAs are exressed in the testis.
-```{r, fig.height=10, fig.cap="Heatmap of CTAs expression in normal tissues"}
+```{r, fig.height=6, fig.cap="Heatmap of CTAs expression in normal tissues"}
 # Log10 to scale the data
 df_log10 <- log10(t(df_expr) + 1)
+df_log10_all_cta <- df_log10[, !colnames(df_log10) %in% housekp_genes]
+df_log10_all_cta <- t(df_log10_all_cta)
 
-# Create heatmap
-colors = c("black", "red")
-Heatmap(as.matrix(df_log10),
-    cluster_rows = FALSE,    
+# CTA annotation
+l_cta_validated <- read.table("../data/CTA_validated_list.txt", sep = "\t", header = FALSE)$V1
+
+df_cta_validated <- df_log10_all_cta[, colnames(df_log10_all_cta) %in% l_cta_validated]
+df_cta_putatives <- df_log10_all_cta[, !colnames(df_log10_all_cta) %in% l_cta_validated]
+
+# Create heatmaps
+colors = colorRamp2(c(min(df_log10_all_cta), max(df_log10_all_cta)), c("black", "red"))
+ht_validated <- Heatmap(
+    as.matrix(df_cta_validated),
+    cluster_rows = FALSE,
     cluster_columns = FALSE,
-    col = colors,  
-    border = NA,             
+    col = colors,
+    border = NA,
     show_column_names = TRUE,
     show_row_names = TRUE,
-    column_names_gp = gpar(fontsize = 6),
-    row_names_gp = gpar(fontsize = 2),
-    heatmap_legend_param = list(title = "Expression Level")
+    column_title = "Validated CTAs",
+    column_names_gp = gpar(fontsize = 1),
+    row_names_gp = gpar(fontsize = 10),
+    heatmap_legend_param = list(title = "Expression"),
+    rect_gp = gpar(col = NA)
 )
+
+ht_putatives <- Heatmap(
+    as.matrix(df_cta_putatives),
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    col = colors,
+    show_column_names = TRUE,
+    show_row_names = TRUE,
+    column_title = "Putatives CTAs",
+    column_names_gp = gpar(fontsize = 1),
+    row_names_gp = gpar(fontsize = 10),
+    rect_gp = gpar(col = NA)
+)
+#png("../results/figures/heatmaps/heatmap_cta_normal_tissues.png",  width = 3000, height = 1800, res = 300)
+draw(ht_validated + ht_putatives, merge_legend = TRUE)
+#dev.off()
 ```
 \newpage
 So, this heatmap shows that genes are generally expressed in the testis and less expressed in other tissues.
