@@ -19,3 +19,10 @@ nohup netMHC -a HLA-A0301 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../result
 nohup netMHC -a HLA-B0702 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_b0702_selected_blastp.out 2>&1 &
 nohup netMHC -a HLA-B0801 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_b0801_selected_blastp.out 2>&1 &
 nohup netMHC -a HLA-B4402 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_b4402_selected_blastp.out 2>&1 &
+
+
+nohup netMHC -a HLA-C0401 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_c0401_selected_blastp.out 2>&1 &
+nohup netMHC -a HLA-C0501 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_c0501_selected_blastp.out 2>&1 &
+nohup netMHC -a HLA-C0602 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_c0602_selected_blastp.out 2>&1 &
+nohup netMHC -a HLA-C0701 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_c0701_selected_blastp.out 2>&1 &
+nohup netMHC -a HLA-C0702 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_c0702_selected_blastp.out 2>&1 &
