@@ -32,9 +32,3 @@ grep '^>' proteine_seq_targeted_cta.fasta | tr -d '>' | awk '{
         }
     }
 }' > entry_name_gene_name.tsv 
-
-# Create fasta with peptide sequences from blastp results
-awk 'NR==FNR {info[$1]=$5; next} /^>/ {id=substr($0,2); 
-    show=(id in info)} show {print (substr($0,2) in info ? ">" id " " info[id] : $0); getline; print}' 
-    selected_results_blastp_mismatch.tsv seq_pep.fasta > seq_pep_selected_blastp.fasta
-

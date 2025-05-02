@@ -10,11 +10,12 @@
 
 -- Bash commands
   --sudo apt install mysql-server
-  --sudo mysql -u root -p < iedb_public.sql 
-  --sudo mysql -u root -p
 
 -- Select iedb database
-USE iedb_public;
+CREATE DATABASE iedb;
+USE iedb;
+  --sudo mysql -u root -p iedb < iedb_public.sql 
+  --sudo mysql -u root -p
 
 -- Select id for species Homo sapiens
 SELECT
