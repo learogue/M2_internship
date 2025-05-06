@@ -10,9 +10,17 @@
 # Import packages
 from collections import defaultdict
 
-# Read peptides IDs
+# Read gene names and their corresponding entry names
+d_genes = defaultdict()
+with open('../data/entry_name_gene_name.tsv', 'r') as f:
+    for lig in f:
+        lig = lig.strip().split()
+        d_genes[lig[0]] = lig[1]
+
+# Read peptides IDs and their corresponding gene
+d_pep_gene_id = defaultdict(list)
 pep_id = set()
-with open('../results/selected_results_blastp_mismatch.tsv') as f:
+with open('../results/selected_results_blastp_0_mismatch.tsv') as f:
     for lig in f:
         pep_id.add(lig.strip().split()[0])
 
@@ -35,5 +43,4 @@ with open('../results/seq_pep.fasta') as f:
 # Save the aligned peptides in a new fasta file
 with open('../results/seq_pep_aligned.fasta', 'w') as f:
     for id, seq in d_pep_aligned.items():
-        f.write(f'{id}\n{seq}\n')
-        
+        f.write(id + '\n' + seq + '\n')

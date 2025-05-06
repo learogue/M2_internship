@@ -8,21 +8,28 @@
 # ------------------------------------------------------------------------------------------------------------------
 
 # Predict the binding affinity of the selected peptides to MHC class I molecules using NetMHCpan
-nohup netMHC -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_selected_blastp.out 2>&1 &
+alleles=(
+    HLA-A0101
+    HLA-A0201
+    HLA-A0301
+    HLA-B0702
+    HLA-B0801
+    HLA-B4402
+    HLA-C0401
+    HLA-C0501
+    HLA-C0602
+    HLA-C0701
+    HLA-C0702
+)
+for allele in "${alleles[@]}"; do
+    nohup netMHC -a "$allele" -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc/res_netmhc_${allele}_selected_blastp.out 2>&1 &
+done
 
-# Select th strong binding peptides
-cat res_netmhc_selected_blastp.out | grep 'SB' > strong_binding_peptides_hla_a0201.out
+# Loop for each NetMHC output file
+for file in ../results/res_netmhc/res_netmhc_*_selected_blastp.out; do
+    # Extract file name
+    base=$(basename "$file" .out)
 
-# Other MHC class I alleles
-nohup netMHC -a HLA-A0101 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_a0101_selected_blastp.out 2>&1 &
-nohup netMHC -a HLA-A0301 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_a0301_selected_blastp.out 2>&1 &
-nohup netMHC -a HLA-B0702 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_b0702_selected_blastp.out 2>&1 &
-nohup netMHC -a HLA-B0801 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_b0801_selected_blastp.out 2>&1 &
-nohup netMHC -a HLA-B4402 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_b4402_selected_blastp.out 2>&1 &
-
-
-nohup netMHC -a HLA-C0401 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_c0401_selected_blastp.out 2>&1 &
-nohup netMHC -a HLA-C0501 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_c0501_selected_blastp.out 2>&1 &
-nohup netMHC -a HLA-C0602 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_c0602_selected_blastp.out 2>&1 &
-nohup netMHC -a HLA-C0701 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_c0701_selected_blastp.out 2>&1 &
-nohup netMHC -a HLA-C0702 -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc_hla_c0702_selected_blastp.out 2>&1 &
+    # Select th strong binding peptides
+    grep 'SB' "$file" > "../results/netmhc_sb/${base}_sb.out"
+done
