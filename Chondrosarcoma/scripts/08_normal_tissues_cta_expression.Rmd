@@ -42,12 +42,12 @@ compute_scatter_data <- function(df_int_cta) {
   colnames(df_mean_int_all) <- "Intensity"
   df_mean_int_all$SYMBOL <- rownames(df_mean_int_all)
 
-  # Fusionner toutes les données
+  # Merge data
   df_scatter <- merge(df_mean_int_all, df_mean_tissue, by = "SYMBOL")
   df_scatter <- merge(df_scatter, df_clust_cta_conv, by = "SYMBOL", all.x = TRUE)
   df_scatter <- merge(df_scatter, df_clust_cta_all, by = "SYMBOL", all.x = TRUE)
 
-  # Nettoyage et renommage des colonnes
+  # Clean and rename
   rownames(df_scatter) <- df_scatter$SYMBOL
   df_scatter <- df_scatter[, -which(colnames(df_scatter) == "SYMBOL")]
   colnames(df_scatter) <- c("Intensity", "Mean_expression_tissues", "Cluster_conv", "Cluster_all")
@@ -333,6 +333,38 @@ selected_cta <- df_scatter_63[
 ]
 
 # Save
-#write.table(rownames(selected_cta), file = "../results/selected_cta_scatter.txt", quote = FALSE, row.names = FALSE, col.names = FALSE)
+write.table(rownames(selected_cta), file = "../results/selected_cta_scatter.txt", quote = FALSE, row.names = FALSE, col.names = FALSE)
+```
+
+
+# V. Generate plot for report
+```{r}
+# Replace
+df_scatter_63$Cluster_conv <- ifelse(
+  df_scatter_63$Cluster_conv == "1", "a",
+  ifelse(df_scatter_63$Cluster_conv == "2", "b",
+         ifelse(df_scatter_63$Cluster_conv == "3", "c", df_scatter_63$Cluster_conv)))
+
+df_scatter_63 <- df_scatter_63[!rownames(df_scatter_63) %in% housekp_genes,]
+
+save(df_scatter_63, file = "../results/df_scatter_63.RData")
+
+# Generate plot
+ggplot(df_scatter_63,
+       aes(x = Mean_expression_tissues, y = Intensity, color = Cluster_conv)) +
+       geom_point(size = 1) +
+       geom_vline(xintercept = 4.139, linetype = "dashed", color = "black") +
+       geom_hline(yintercept = median(df_scatter_63$Intensity), linetype = "dashed", color = "black") +
+       scale_color_manual(values = c("a" = "#dadada", "b" = "#dadada", "c" = "#dadada"), na.value = "#dadada") +
+       theme_minimal() +
+       scale_x_log10() +
+       labs(title = "Scatter plot of tumor specificity of CTAs (n = 63)",
+            x = "Normal tissues expression (Log10 TPM mean)", 
+            y = "Chondrosarcoma CTA expression (intensities)", 
+            color = "Clustering gene\nimpacting survival\n(conventional CHS)")
+
+# etiquette ?
+#  pearson et HR
+```
 ```
 

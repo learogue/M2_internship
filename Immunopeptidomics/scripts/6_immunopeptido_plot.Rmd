@@ -1,0 +1,151 @@
+---
+title: "Untitled"
+author: "Léa ROGUE"
+output:
+  pdf_document:
+    fig_caption: true
+    latex_engine: xelatex
+    toc: true
+    toc_depth: '4'
+    includes:
+      before_body: tex_files/list_of_figures.tex
+date: "2025-05-06"
+---
+
+```{r, echo = FALSE}
+library(knitr)
+opts_chunk$set(
+  tidy.opts = list(width.cutoff = 60), 
+  tidy = TRUE, 
+  fig.align = 'center'
+)
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(ggrepel)
+```
+
+
+# IEDB ref
+```{r}
+df_ref <- read.table("../data/table_ref.tsv", sep ="\t", header = TRUE)
+```
+
+
+```{r}
+# Créer une colonne avec l'étiquette 'Gene_Peptide'
+df_ref$Gene_Peptide <- paste(df_ref$Genes, df_ref$main.peptide, sep = " - ")
+
+# Création du graphique avec l'ordre original
+ggplot(df_ref, aes(x = reorder(Gene_Peptide, Number.of.IEDB.ref), y = Number.of.IEDB.ref, fill = HLA.A.02.01)) +
+  geom_col() +
+  scale_fill_manual(values = c("HLA-A*02:01" = "#E74C3C", "Others" = "#3498DB")) +  # rouge pour A0201
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) + 
+  labs(title = "Histogram of number of references per peptides",
+       x = "Gene - Peptide", 
+       y = "IEDB reference number",
+       fill = "HLA type")
+```
+
+
+# Scatter plot GTEx
+```{r}
+# Charger et filtrer
+load("../../Chondrosarcoma/results/df_scatter_63.RData")
+genes <- readLines("../../Chondrosarcoma/results/selected_cta_scatter.txt")
+df_scatter_63 <- df_scatter_63[rownames(df_scatter_63) %in% genes, ]
+df_scatter_63$Genes <- rownames(df_scatter_63)
+
+# Fusionner avec les références
+df_scatter_63 <- merge(df_scatter_63, df_ref, by = "Genes", all.x = TRUE)
+
+# Color variable
+df_scatter_63$ref <- ifelse(is.na(df_scatter_63$Number.of.IEDB.ref), "< 15 ref", ">= 15 ref")
+
+# Remplacer les NA pour la taille
+df_scatter_63$Number.of.IEDB.ref[is.na(df_scatter_63$Number.of.IEDB.ref)] <- 0
+df_scatter_63$HLA.A.02.01[is.na(df_scatter_63$HLA.A.02.01)] <- " "
+
+# Filtrer les gènes avec >=15 ref
+df_labels <- df_scatter_63 %>% 
+  filter(Number.of.IEDB.ref >= 15) %>%
+  group_by(Mean_expression_tissues, Intensity) %>% 
+  slice_max(order_by = Number.of.IEDB.ref, n = 1, with_ties = FALSE) %>%
+  ungroup()
+```
+
+```{r}
+ggplot(df_scatter_63,
+       aes(x = Mean_expression_tissues,
+           y = Intensity,
+           size = Number.of.IEDB.ref,
+           color = ref,
+           shape = HLA.A.02.01)) +
+  geom_point(alpha = 0.8) +
+  geom_text_repel(data = df_labels, 
+                aes(label = Genes), 
+                color = "black",
+                size = 2.5, 
+                max.overlaps = 100) +
+  theme_minimal() +
+  scale_x_log10() +
+  scale_size_continuous(range = c(1, 6)) +
+  scale_color_manual(values = c("< 15 ref" = "#dadada", ">= 15 ref" = "#3498DB")) +
+  scale_shape_manual(values = c("HLA-A*02:01" = 15, "Others" = 16, " " = 16)) +
+  labs(title = "Scatter plot of tumor specificity of CTAs (n = 63)",
+       x = "Normal tissues expression (Log10 TPM mean)", 
+       y = "Chondrosarcoma CTA expression (intensities)",
+       size = "IEDB References",
+       color = "Number of references",
+       shape = "HLA restriction")
+```
+
+```{r}
+df <- df_scatter_63 %>% 
+  filter(Number.of.IEDB.ref >= 15) %>%
+  select(Genes, Intensity, Mean_expression_tissues, main.peptide, HLA.A.02.01, Number.of.IEDB.ref)
+
+#write.table(df, '../results/table_scatter_sup15ref.tsv', sep = '\t', row.names = FALSE, quote = FALSE)
+```
+
+
+# Scatter with affinity
+```{r}
+df_affinity <- read.table("../results/df_min_affinity_expr_hla_a0201.tsv", sep ="\t", header = TRUE)
+load("../../Chondrosarcoma/results/df_scatter_63.RData")
+
+
+df_scatter_63 <- df_scatter_63[rownames(df_scatter_63) %in% genes, ]
+df_scatter_63$SYMBOL <- rownames(df_scatter_63)
+
+df_scatter_aff <- merge(df_scatter_63, df_affinity, by = "SYMBOL", all.x = TRUE)
+df_scatter_aff$Affinity <- as.numeric(df_scatter_aff$Affinity)
+
+# Créer une colonne pour la couleur : "With Affinity" ou "No Affinity"
+df_scatter_aff$color_group <- ifelse(is.na(df_scatter_aff$Affinity), "No SB peptides", "SB peptides")
+df_scatter_aff$Affinity <- ifelse(is.na(df_scatter_aff$Affinity), 40, df_scatter_aff$Affinity)
+```
+
+```{r}
+# Create plot
+ggplot(df_scatter_aff,
+       aes(x = Mean_expression_tissues,
+           y = Intensity,
+           size = Affinity,
+           color = color_group)) +
+  geom_point(alpha = 0.8) +
+  theme_minimal() +
+  scale_x_log10() +
+  scale_size_continuous(range = c(5, 1)) +
+  scale_color_manual(values = c("No SB peptides" = "#dadada", "SB peptides" = "#3498DB")) +
+  labs(title = "Scatter plot of tumor specificity of CTAs (n = 63)",
+       x = "Normal tissues expression (Log10 TPM mean)", 
+       y = "Chondrosarcoma CTA expression (intensities)",
+       size = "Inverse Affinity",
+       color = "Binding")
+```
+
+
