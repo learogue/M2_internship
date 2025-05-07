@@ -180,44 +180,21 @@ fig.write_html('../results/scatter_affinity_expr_hla_a0201_interactive.html')
 
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-
+# Have affinity for each peptide
 # Prepare data
 d_pep_affinity = defaultdict(dict)
 with open('../results/netmhc_sb/res_netmhc_HLA-A0201_selected_blastp_sb_annotated.out', 'r') as f:
     for lig in f:
         lig = lig.strip().split()
-        d_pep_affinity[lig[9]][' '.join(lig[16:])] = float(lig[12])
-
-# Select data superior to median expression
-d_expr = defaultdict(int)
-d_pep_affinity_sup_med = defaultdict(dict)
-for pep, d_pep in d_pep_affinity.items():
-    for genes, affinity in d_pep.items():
-        if re.search(r', ', genes):
-            for gene in genes.split(', '):
-                #
-                if gene in df_labeled['SYMBOL'].values:
-                    d_pep_affinity_sup_med[pep][genes] = affinity
-        
-        elif genes in df_labeled['SYMBOL'].values:
-            d_pep_affinity_sup_med[pep][genes] = affinity
+        d_pep_affinity[lig[2]][' '.join(lig[16:])] = float(lig[12])
 
 # Convert to DataFrame with 3 columns: Gene, Peptide, Affinity
 l = []
-for pep, d_pep in d_pep_affinity_sup_med.items():
+for pep, d_pep in d_pep_affinity.items():
     for gene, affinity in d_pep.items():
         l.append((pep, gene, affinity))
 
-# Create DataFrame
+# Create and DataFrame
 df_pep_genes_aff = pd.DataFrame(l, columns=['Peptide', 'Genes', 'Affinity'])
+df_pep_genes_aff.to_csv('../results/df_peptides_genes_aff_hla_a0201.tsv', index = False, sep = '\t')
 
-
-# Scatter plot with all peptides
-plt.figure(figsize=(10, 6))
-sns.scatterplot(data = df_pep_genes_aff, x = 'Affinity', y = 'Mean_expression')
-plt.title('Minimum affinity per gene vs expression level in chondrosarcoma')
-plt.xlabel('Minimum affinity (nM)')
-plt.ylabel('Expression level in chondrosarcoma')
-plt.savefig('../results/scatter_affinity_expr_hla_a0201.png')
-plt.show()
