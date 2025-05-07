@@ -178,8 +178,6 @@ fig.update_layout(
 # Save the figure
 fig.write_html('../results/scatter_affinity_expr_hla_a0201_interactive.html')
 
-
-
 # Have affinity for each peptide
 # Prepare data
 d_pep_affinity = defaultdict(dict)
@@ -197,4 +195,3 @@ for pep, d_pep in d_pep_affinity.items():
 # Create and DataFrame
 df_pep_genes_aff = pd.DataFrame(l, columns=['Peptide', 'Genes', 'Affinity'])
 df_pep_genes_aff.to_csv('../results/df_peptides_genes_aff_hla_a0201.tsv', index = False, sep = '\t')
-
