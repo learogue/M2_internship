@@ -16,34 +16,30 @@ We also used NetMHC 4.0 (services.healthtech.dtu.dk/services/NetMHC-4.0) for HLA
 ## Installation
 ```
 git clone https://github.com/learogue/M2_internship.git
-cd M2_internship
+cd M2_internship 
 conda env create -f env/cta.yaml
 ```
 You can execute the scripts directly or use RStudio to run the RMarkdown files.
 
 ## Contents
 ```
-.
 ├── Chondrosarcoma
-│   ├── README.md
 │   ├── data
-│   │   ├── CTA_list_clean.txt
-│   │   ├── CTA_signif_coxph_all_indiv.txt
-│   │   ├── CTA_signif_coxph_conv_indiv.txt
-│   │   ├── MHC_genes.txt
-│   │   ├── immune_cells_genes.tsv
-│   │   └── list_files_used_publi.txt
+│   │   ├── CTA_list_clean.txt                              # Complete list of CTA (including validated and putatives)
+│   │   ├── MHC_genes.txt                                   # MHC-I and MHC-II genes coding
+│   │   ├── immune_cells_genes.tsv                          # Signature genes per immune cells type (Bindea et al., 2013)
+│   │   └── list_files_used_publi.txt                       # Files list because there is duplicates unassociated patient data
 │   ├── results
 │   └── scripts
-│       ├── 00_chondro_download_data.R
-│       ├── 01_clean_files.sh
-│       ├── 02_chondro_preprocess.R
-│       ├── 03_chondro_qc.R
-│       ├── 04_chondro_processing.R
-│       ├── 05_chondro_expression_analysis.Rmd
-│       ├── 06_chondro_survival_analysis.Rmd
-│       ├── 07_expression_cta_normal_tissues_gtex.R
-│       ├── 08_normal_tissues_cta_expression.Rmd
+│       ├── 00_chondro_download_data.R                      # Download microarray data (chondrosarcoma)
+│       ├── 01_clean_files.sh                               # Remove duplicates files
+│       ├── 02_chondro_preprocess.R                         # Create raw and normalized (RMA) objects
+│       ├── 03_chondro_qc.R                                 # QC
+│       ├── 04_chondro_processing.R                         # Matrixes constructions (genes, immune cells)
+│       ├── 05_chondro_expression_analysis.Rmd              # Transcriptomic analysis
+│       ├── 06_chondro_survival_analysis.Rmd                # Survival analysis
+│       ├── 07_expression_cta_normal_tissues_gtex.R         # Download data and matrix construction from GTEx to have mean TPM per CTA
+│       ├── 08_normal_tissues_cta_expression.Rmd            # Explore CTA expression in normal tissues and integrate CTA expression in Chondrosarcoma
 │       ├── 09_pseudo_bulk_compute_tpm.py
 │       ├── 10_pseudo_bulk_scrnaseq.Rmd
 │       ├── 11_sc_analysis_conv_chondro.ipynb
@@ -61,7 +57,6 @@ You can execute the scripts directly or use RStudio to run the RMarkdown files.
 │       │   ├── main.py
 │       │   └── merge.py
 │       └── tex_files
-│           └── list_of_figures.tex
 ├── Immunopeptidomics
 │   ├── data
 │   ├── results
@@ -77,6 +72,9 @@ You can execute the scripts directly or use RStudio to run the RMarkdown files.
 ├── README.md
 └── cta.yaml
 ```
+
+
+
 ## References
 microarray
 sc
