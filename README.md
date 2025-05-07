@@ -1,1 +1,86 @@
-# M2_internship
+# IMoST M2 Bioinformatic internhip
+
+This repository contains scripts created during my M2 internship in Bioinformatics, focused on the identification of therapeutic targets for radiopharmaceutical therapy in chondrosarcoma.
+
+The objective of this work is to characterize tumor-specific markers in chondrosarcoma. The project is based on transcriptomic and immunopeptidomic data analysis to identify potential peptides present on the surface of cancerous chondrosarcoma cells. We focused on genes classified as Cancer Testis Antigens (CTA), which are expressed in many cancers. Specifically, we explored the expression of these CTA genes in chondrosarcoma and their potential to be presented on the surface of tumor cells via the HLA-I complex, through an immunopeptidomic analysis.
+
+The first part concern transcriptomic analysis with public dataset of chondrosarcoma (www.ebi.ac.uk/biostudies/arrayexpress/studies/E-MTAB-7264), healthy tissues (gtexportal.org) dataset which is single cell RNA-seq (GSE184118).
+The 2nd part concer immunopeptidomic analysis with the Immune Epitope Database exploration (www.iedb.org).
+
+
+## Usage and requirements
+This project was developed and executed on a virtual machine provided by IFB Biosphère (8 CPUs, 32 GB RAM) and on local. It uses multiple languages including R, Python, Bash, and MySQL. All required packages are listed in the cta.yaml file and can be installed using Conda.
+
+We also used NetMHC 4.0 (services.healthtech.dtu.dk/services/NetMHC-4.0) for HLA-I binding predictions (authorization is required to use this tool).
+
+## Installation
+```
+git clone https://github.com/learogue/M2_internship.git
+cd M2_internship
+conda env create -f env/cta.yaml
+```
+You can execute the scripts directly or use RStudio to run the RMarkdown files.
+
+## Contents
+```
+.
+├── Chondrosarcoma
+│   ├── README.md
+│   ├── data
+│   │   ├── CTA_list_clean.txt
+│   │   ├── CTA_signif_coxph_all_indiv.txt
+│   │   ├── CTA_signif_coxph_conv_indiv.txt
+│   │   ├── MHC_genes.txt
+│   │   ├── immune_cells_genes.tsv
+│   │   └── list_files_used_publi.txt
+│   ├── results
+│   └── scripts
+│       ├── 00_chondro_download_data.R
+│       ├── 01_clean_files.sh
+│       ├── 02_chondro_preprocess.R
+│       ├── 03_chondro_qc.R
+│       ├── 04_chondro_processing.R
+│       ├── 05_chondro_expression_analysis.Rmd
+│       ├── 06_chondro_survival_analysis.Rmd
+│       ├── 07_expression_cta_normal_tissues_gtex.R
+│       ├── 08_normal_tissues_cta_expression.Rmd
+│       ├── 09_pseudo_bulk_compute_tpm.py
+│       ├── 10_pseudo_bulk_scrnaseq.Rmd
+│       ├── 11_sc_analysis_conv_chondro.ipynb
+│       ├── pdf_html_md
+│       │   ├── 05_chondro_expression_analysis.pdf
+│       │   ├── 06_chondro_survival_analysis.pdf
+│       │   ├── 08_normal_tissues_cta_expression.pdf
+│       │   ├── 10_pseudo_bulk_scrnaseq.pdf
+│       │   ├── 11_sc_analysis_conv_chondro.html
+│       │   └── 11_sc_analysis_conv_chondro.pdf
+│       ├── scr_scRNAseq_human
+│       │   ├── README.md
+│       │   ├── apply_filters.py
+│       │   ├── create_anndata_object.py
+│       │   ├── main.py
+│       │   └── merge.py
+│       └── tex_files
+│           └── list_of_figures.tex
+├── Immunopeptidomics
+│   ├── data
+│   ├── results
+│   └── scripts
+│       ├── 0_immunopeptido_extract_data_iedb.sql
+│       ├── 1_immunopeptido_create_peptides_table.py
+│       ├── 2_immunopeptido_processing.sh
+│       ├── 3_immunopeptido_fasta_aligned_pep.py
+│       ├── 4_immunopeptido_predict_aff.sh
+│       ├── 5_immunopeptido_analysis.py
+│       └── 6_immunopeptido_plot.Rmd
+├── LICENSE
+├── README.md
+└── cta.yaml
+```
+## References
+microarray
+sc
+ifb
+
+## Licence
+Creative Commons Legal Code - CC0 1.0 Universal
