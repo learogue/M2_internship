@@ -1592,6 +1592,30 @@ df_indiv_clusters_hm_anno <- data.frame(
 \newpage
 We see in the cluster 4 dedifferentiated, G2 and benign histology. In C1, we retrieve G3, G2 and some dediff. In C2 and C3, there is more G2 and G1 with some benign and dediff. We kwnow that dediff are generally bad diagnosis but here we see that they are infiltrated. So this could be induce errors.
 
+\newpage
+```{r, fig.height=8, fig.width=15, fig.cap="Heatmap (from fig. 19) with grade data (n = 102)"}
+Heatmap(
+    as.matrix(heatmap_data_mhc_all),
+    cluster_rows = TRUE,    
+    cluster_columns = TRUE,
+    cluster_column_slices = TRUE,
+    show_column_dend = TRUE,
+    show_row_dend = TRUE,
+    column_km = 4, # Number of clusters
+    column_km_repeats = 20,
+    col = colorRamp2(seq(-8, 8, length.out = 100), colors),  
+    border = NA,             
+    show_column_names = TRUE,
+    column_names_gp = gpar(fontsize = 4),
+    row_names_gp = gpar(fontsize = 7),
+    heatmap_legend_param = list(title = "Expression Level"),
+    top_annotation = columnAnnotation(
+      Histology = df_metadata$Histology,
+      col = list(Histology = histology_colors))
+)
+```
+
+
 ## 2) Adding metadata on heatmap with conventional patients
 ### a- k = 2
 ```{r, fig.height=8, fig.width=15, fig.cap="Heatmap (from fig. 22) with metadata (n = 73)"}
@@ -1773,6 +1797,29 @@ Heatmap(as.matrix(data_cta_63),
                  TP53 = tp53_colors))
 )
 ```
+
+```{r, fig.height=6, fig.width=10, fig.cap="Significant CTAs heatmap (from fig.6) with grade data (n = 63)"}
+Heatmap(as.matrix(data_cta_63),
+    cluster_rows = TRUE,    
+    cluster_columns = TRUE,
+    cluster_column_slices = TRUE,
+    clustering_distance_columns = "euclidean",
+    clustering_method_columns = "complete",
+    show_column_dend = TRUE,
+    col = colorRamp2(seq(-8, 8, length.out = 100), colors),  
+    border = NA,             
+    show_column_names = TRUE,
+    show_row_names = TRUE,
+    column_title = "Heatmap of CTA with significant survival impact",
+    column_names_gp = gpar(fontsize = 4),
+    row_names_gp = gpar(fontsize = 2),
+    heatmap_legend_param = list(title = "Expression Level"),
+    top_annotation = columnAnnotation(
+      Histology = metadata_surv_conv$Histology,
+      col = list(Histology = histology_colors))
+)
+```
+
 
 ### b) Figure 7
 ```{r, fig.height=6, fig.width=10, fig.cap="Selected significant CTAs heatmap (from fig.7) with metadata (n = 63)"}

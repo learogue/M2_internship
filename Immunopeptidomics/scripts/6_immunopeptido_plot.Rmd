@@ -32,9 +32,9 @@ With these 2 approaches, we can integer list of genes to see if genes with predi
 ```{r}
 library(ggplot2)
 library(dplyr)
+library(tidyr)
 library(ggrepel)
 library(plotly)
-library(ggvenn)
 ```
 
 
@@ -205,7 +205,7 @@ p <- ggplot(df_scatter_aff_pep,
            size = min_affinity,
            color = color_group,
            text = paste0("Gene: ", SYMBOL,
-                         "<br>Mean expression: ", round(Mean_expression_tissues, 2),
+                         "<br>Mean expression: ", round(Mean_expression_tissues, 3),
                          "<br>Intensity: ", round(Intensity, 2),
                          "<br>Peptides (nM affinity):<br>", tooltip_peptides))) +
   geom_point(alpha = 0.8) +
@@ -243,24 +243,36 @@ p <- ggplot(df_scatter_aff_pep,
 ggplotly(p, tooltip = "text")
 ```
 
-# III. Venn diagram
-We want to see associated genes between the 2 lists
-```{r}
-# Prepare data
-venn_data <- list(
-  l_ref = subset(df_scatter_ref$Genes, df_scatter_ref$Number.of.IEDB.ref != 0),
-  l_pred = subset(df_scatter_aff_pep$SYMBOL, df_scatter_aff_pep$tooltip_peptides != "No SB peptide")
-)
 
-# Create Venn diagram
-ggvenn(venn_data, 
-       fill_color = c("skyblue", "pink"),
-       show_percentage = FALSE)
+###c. Scatter plot with HR data
+```{r}
+# Adding data on pearson correlation
+df_hot_cold <- read.table("../../Chondrosarcoma/results/clusters_indiv/clusters_cta_pearson_63.tsv", header = T, sep = "\t")
+colnames(df_hot_cold) <- c("Associated_immunophenotype", "SYMBOL")
+df_scatter_aff_pep <- merge(df_scatter_aff_pep, df_hot_cold, by = "SYMBOL", all = T)
 ```
 
 
-```{r}
-setdiff(venn_data$l_ref, venn_data$l_pred)
-```
 
+```{r, fig.cap="Interactive scatter plot of CTAs intensities and their expression in normal tissues with clustering colors, size by HR (significant), and shape by associated immunophenotype (n = 63)"}
+p <- ggplot(df_scatter_aff_pep[df_scatter_aff_pep$Cluster_conv != "NA" & df_scatter_aff_pep$Cluster_conv != "c", ],
+       aes(x = Mean_expression_tissues, 
+           y = Intensity, 
+           color = Cluster_conv,
+           shape = Associated_immunophenotype,
+           text = paste0("Gene: ", SYMBOL,
+                         "<br>Mean expression: ", round(Mean_expression_tissues, 2),
+                         "<br>Intensity: ", round(Intensity, 2),
+                         "<br>Peptides (nM affinity):<br>", tooltip_peptides))) +
+       geom_point(alpha = 0.8) +
+       scale_shape_manual(values = c("COLD" = 15, "HOT" = 16)) +
+       scale_color_manual(values = c("a" = "#3498DB", "b" = "#E74C3C")) +
+       theme_minimal() +
+       scale_x_log10() +
+       labs(title = "Scatter plot of tumor specificity of CTAs (n = 63)",
+            x = "Normal tissues expression (Log10 TPM mean)", 
+            y = "Chondrosarcoma CTA expression (intensities)", 
+            color = "Clustering gene\nimpacting survival\n(conventional CHS)")
+ggplotly(p, tooltip = "text")
+```
 

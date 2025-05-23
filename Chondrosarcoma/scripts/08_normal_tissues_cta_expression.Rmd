@@ -31,6 +31,7 @@ library(ComplexHeatmap)
 library(dplyr)
 library(ggplot2)
 library(colorRamp2)
+library(plotly)
 ```
 
 # Functions
@@ -61,8 +62,7 @@ create_plot <- function(df_scatter, cluster_col, nudge_x, nudge_y){
             aes(x = Mean_expression_tissues, 
                 y = Intensity, color = {{ cluster_col }})) +
             geom_point(size = 1) +
-            scale_color_manual(values = c("1" = "#3498DB", "2" = "#E74C3C", "3" = "#2ECC71"), 
-                               na.value = "#dadada") +
+            scale_color_manual(values = c("1" = "#3498DB", "2" = "#E74C3C", "3" = "#2ECC71"), na.value = "#dadada") +
             geom_label(data = df_scatter[rownames(df_scatter) %in% housekp_genes, ], 
                   aes(label = rownames(df_scatter)[rownames(df_scatter) %in% housekp_genes]),
                   nudge_x = nudge_x,
@@ -326,19 +326,24 @@ p +
 # IV. Select interested CTAs thanks thresholds
 In the literature, PSMA is a known marker and used to treat prostate cancer, so the expresion of PSMA gene (FOLH1) is used as a threshold with the median expression in chondrosarcoma
 ```{r}
+# FOLH1 expression
+folh1_expr <- df_scatter_63[rownames(df_scatter_63) %in% "FOLH1", 2]
+
 # Select
 selected_cta <- df_scatter_63[
   df_scatter_63$Intensity > median(df_scatter_63$Intensity) &
   df_scatter_63$Mean_expression_tissues < df_scatter_63["FOLH1", "Mean_expression_tissues"],
 ]
 
+selected_cta <- selected_cta[!rownames(selected_cta) %in% housekp_genes,]
+
 # Save
-write.table(rownames(selected_cta), file = "../results/selected_cta_scatter.txt", quote = FALSE, row.names = FALSE, col.names = FALSE)
+#write.table(rownames(selected_cta), file = "../results/selected_cta_scatter.txt", quote = FALSE, row.names = FALSE, col.names = FALSE)
 ```
 
 
 # V. Generate plot for report
-```{r}
+```{r, fig.cap="Scatter plot of CTAs intensities and their expression in normal tissues (n = 63)"}
 # Replace
 df_scatter_63$Cluster_conv <- ifelse(
   df_scatter_63$Cluster_conv == "1", "a",
@@ -353,8 +358,10 @@ save(df_scatter_63, file = "../results/df_scatter_63.RData")
 ggplot(df_scatter_63,
        aes(x = Mean_expression_tissues, y = Intensity, color = Cluster_conv)) +
        geom_point(size = 1) +
-       geom_vline(xintercept = 4.139, linetype = "dashed", color = "black") +
+       geom_vline(xintercept = folh1_expr, linetype = "dashed", color = "black") +
        geom_hline(yintercept = median(df_scatter_63$Intensity), linetype = "dashed", color = "black") +
+       annotate("text", x = folh1_expr - 3.1, y = max(df_scatter_63$Intensity), label = "FOLH1 expression", size = 2.5) +
+       annotate("text", x = max(df_scatter_63$Mean_expression_tissues) - 2.6, y = median(df_scatter_63$Intensity) + 0.4, label = "Median\nexpression", size = 2.5) +
        scale_color_manual(values = c("a" = "#dadada", "b" = "#dadada", "c" = "#dadada"), na.value = "#dadada") +
        theme_minimal() +
        scale_x_log10() +
@@ -362,9 +369,107 @@ ggplot(df_scatter_63,
             x = "Normal tissues expression (Log10 TPM mean)", 
             y = "Chondrosarcoma CTA expression (intensities)", 
             color = "Clustering gene\nimpacting survival\n(conventional CHS)")
+```
 
-# etiquette ?
-#  pearson et HR
+
+```{r}
+# Adding data on pearson correlation
+df_hot_cold <- read.table("../results/clusters_indiv/clusters_cta_pearson_63.tsv", header = T, sep = "\t")
+colnames(df_hot_cold) <- c("Associated_immunophenotype", "SYMBOL")
+df_scatter_63$SYMBOL <- rownames(df_scatter_63)
+df_scatter_anno <- merge(df_scatter_63, df_hot_cold, by = "SYMBOL")
+
+# Adding HR data
+df_hr <- read.table("../results/results_coxph_cta_conv_indiv.tsv", header = T, sep = "\t")
+df_hr <- df_hr %>% 
+         select(Variable, HR, Pvalue) %>%
+         filter(Pvalue < 0.05) %>%
+         rename(SYMBOL = Variable)
+df_scatter_anno <- merge(df_scatter_anno, df_hr, by = "SYMBOL", all.x = T)
+
+# Add HR value to add point size
+df_scatter_anno$HR <- ifelse(is.na(df_scatter_anno$HR), 0.1, df_scatter_anno$HR)
+
 ```
+
+
+```{r, fig.cap="Scatter plot of CTAs intensities and their expression in normal tissues with clustering colors, size by HR (significant), and shape by associated immunophenotype (n = 63)"}
+# Generate plot
+ggplot(df_scatter_anno,
+       aes(x = Mean_expression_tissues, 
+           y = Intensity, 
+           color = Cluster_conv,
+           size = HR)) +
+       geom_point(alpha = 0.8) +
+       geom_vline(xintercept = 4.139, linetype = "dashed", color = "black") +
+       geom_hline(yintercept = median(df_scatter_63$Intensity), linetype = "dashed", color = "black") +
+       annotate("text", x = folh1_expr - 3.1, y = max(df_scatter_63$Intensity), label = "FOLH1 expression", size = 2.5) +
+       annotate("text", x = max(df_scatter_63$Mean_expression_tissues) - 2.6, y = median(df_scatter_63$Intensity) + 0.4, label = "Median\nexpression", size = 2.5) +
+       scale_size_continuous(range = c(1, 3)) +
+       scale_color_manual(values = c("a" = "#3498DB", "b" = "#E74C3C", "c" = "#2ECC71"), na.value = "#dadada") +
+       theme_minimal() +
+       scale_x_log10() +
+       labs(title = "Scatter plot of tumor specificity of CTAs (n = 63)",
+            x = "Normal tissues expression (Log10 TPM mean)", 
+            y = "Chondrosarcoma CTA expression (intensities)", 
+            color = "Clustering gene\nimpacting survival\n(conventional CHS)",
+            size = "Signficant HR")
 ```
+
+
+```{r, fig.cap="Scatter plot of CTAs intensities and their expression in normal tissues with clustering colors, size by HR (significant), and shape by associated immunophenotype (n = 63)"}
+# Generate plot
+ggplot(df_scatter_anno,
+       aes(x = Mean_expression_tissues, 
+           y = Intensity, 
+           color = Cluster_conv,
+           size = HR,
+           shape = Associated_immunophenotype)) +
+       geom_point(alpha = 0.8) +
+       geom_vline(xintercept = 4.139, linetype = "dashed", color = "black") +
+       geom_hline(yintercept = median(df_scatter_63$Intensity), linetype = "dashed", color = "black") +
+       annotate("text", x = folh1_expr - 3.1, y = max(df_scatter_63$Intensity), label = "FOLH1 expression", size = 2.5) +
+       annotate("text", x = max(df_scatter_63$Mean_expression_tissues) - 2.6, y = median(df_scatter_63$Intensity) + 0.4, label = "Median\nexpression", size = 2.5) +
+       scale_shape_manual(values = c("COLD" = 15, "HOT" = 16)) +
+       scale_size_continuous(range = c(1, 3)) +
+       scale_color_manual(values = c("a" = "#3498DB", "b" = "#E74C3C", "c" = "#2ECC71"), na.value = "#dadada") +
+       theme_minimal() +
+       scale_x_log10() +
+       labs(title = "Scatter plot of tumor specificity of CTAs (n = 63)",
+            x = "Normal tissues expression (Log10 TPM mean)", 
+            y = "Chondrosarcoma CTA expression (intensities)", 
+            color = "Clustering gene\nimpacting survival\n(conventional CHS)",
+            shape = "Associated Immunophenotype",
+            size = "Signficant HR")
+```
+
+```{r, fig.cap="Interactive scatter plot of CTAs intensities and their expression in normal tissues with clustering colors, size by HR (significant), and shape by associated immunophenotype (n = 63)"}
+p <- ggplot(df_scatter_anno,
+       aes(x = Mean_expression_tissues, 
+           y = Intensity, 
+           color = Cluster_conv,
+           size = HR,
+           shape = Associated_immunophenotype,
+           text = paste0("Gene: ", SYMBOL))) +
+       geom_point(alpha = 0.8) +
+       geom_vline(xintercept = 4.139, linetype = "dashed", color = "black") +
+       geom_hline(yintercept = median(df_scatter_63$Intensity), linetype = "dashed", color = "black") +
+       scale_shape_manual(values = c("COLD" = 15, "HOT" = 16)) +
+       scale_size_continuous(range = c(1, 3)) +
+       scale_color_manual(values = c("a" = "#3498DB", "b" = "#E74C3C", "c" = "#2ECC71"), na.value = "#dadada") +
+       theme_minimal() +
+       scale_x_log10() +
+       labs(title = "Scatter plot of tumor specificity of CTAs (n = 63)",
+            x = "Normal tissues expression (Log10 TPM mean)", 
+            y = "Chondrosarcoma CTA expression (intensities)", 
+            color = "Clustering gene\nimpacting survival\n(conventional CHS)",
+            shape = "Associated Immunophenotype",
+            size = "Signficant HR")
+
+ggplotly(p, tooltip = "text")
+```
+
+
+
+
 
