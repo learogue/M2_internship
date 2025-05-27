@@ -16,7 +16,7 @@ import re
 from bioinfokit.analys import norm
 
 # Read object created with scRNAseq tool from my M1 internship
-adata = ad.read_h5ad("../results/sc_results/chondro_pseudo_bulk/Objects/Objects_merged/object_merged_1.h5ad")
+adata = ad.read_h5ad("../../results/sc_results/chondro_pseudo_bulk/Objects/Objects_merged/object_merged_1.h5ad")
 
 # Aggregate counts
 aggr = sc.get.aggregate(adata, by = 'dataset', func = 'sum')
@@ -30,7 +30,7 @@ l = list(df.columns)
 
 # Read GTF file
 d_length = defaultdict(int)
-with open('../data/Homo_sapiens.GRCh38.113.gtf', 'r') as f:
+with open('../../data/Homo_sapiens.GRCh38.113.gtf', 'r') as f:
     for lig in f:
         lig = lig.strip()
         lig = lig.split('\t')
@@ -44,7 +44,7 @@ with open('../data/Homo_sapiens.GRCh38.113.gtf', 'r') as f:
 # Convert
 lengths = pd.Series(d_length)
 
-# Transposer df pour que les gènes soient en index
+# Transpose df to have genes in index
 df_transposed = df.T
 
 # Filter
@@ -58,4 +58,4 @@ df_transposed.to_csv("../results/matrix_pseudo_bulk_length.tsv", sep='\t', index
 nm = norm()
 tpm_norm = nm.tpm(df=df_transposed, gl='length')
 df_tpm = nm.tpm_norm
-df_tpm.to_csv("../results/matrix_pseudo_bulk_tpm_normalized.tsv", sep='\t', index=True)
+df_tpm.to_csv("../../results/matrix_pseudo_bulk_tpm_normalized.tsv", sep='\t', index=True)

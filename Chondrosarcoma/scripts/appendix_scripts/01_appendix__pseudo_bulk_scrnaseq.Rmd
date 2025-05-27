@@ -34,16 +34,16 @@ library(colorRamp2)
 
 # Read data
 ```{r}
-df_tpm <- read.table("../results/matrix_pseudo_bulk_tpm_normalized.tsv", sep = "\t", header = TRUE, check.names = F)
+df_tpm <- read.table("../../results/matrix_pseudo_bulk_tpm_normalized.tsv", sep = "\t", header = TRUE, check.names = F)
 
 # Read CTA file
-df_CTA <- read.table("../data/CTA_list_clean.txt", header = FALSE)
+df_CTA <- read.table("../../data/CTA_list_clean.txt", header = FALSE)
 
 # Read immune cells
-df_immune_sign <- read.table("../data/immune_cells_mhc_genes.tsv", header = FALSE, sep = "\t")
+df_immune_sign <- read.table("../../data/immune_cells_mhc_genes.tsv", header = FALSE, sep = "\t")
 
 # Read list of CTA that impact survival probabilities
-l_CTA_conv <- read.table("../data/CTA_signif_coxph_conv_indiv.txt", sep = "\t", header = FALSE)$V1
+l_CTA_conv <- read.table("../../data/CTA_signif_coxph_conv_indiv.txt", sep = "\t", header = FALSE)$V1
 ```
 
 # Prepare data
@@ -158,6 +158,4 @@ Heatmap(
     heatmap_legend_param = list(title = "Expression Level")
 )
 ```
-
-
 
