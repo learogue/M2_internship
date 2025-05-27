@@ -1388,7 +1388,7 @@ Heatmap(
 This clustering show the COLD and HOT tumors. But at this moment, we see that some cell types have immunosuppressive effects so it is negative in hot tumor for example. So I can test by delete immunosupressive cells to see "real" hot and cold tumors.
 
 
-##4) Clustering conventional patients with survival data
+## 4) Clustering conventional patients with survival data
 ```{r, fig.cap="Heatmap with k-means clustering (k = 2) on relative immune cells expression (+ MHC) (n = 63)"}
 df_complete_63 <- df_complete[, c("Signature", "CTA", colnames(df_complete)[colnames(df_complete) %in% df_metadata_surv_conv$Patient])]
 
@@ -1497,7 +1497,7 @@ In this section, we are adding metadata to the heatmap to further analyze the cl
 
 ## 1) Adding metadata on heatmap with all patients
 
-```{r, fig.height=8, fig.width=15, fig.cap="Heatmap (from fig. 19) with metadata (n = 102)"}
+```{r, fig.height=6, fig.width=10, fig.cap="Heatmap (from fig. 19) with metadata (n = 102)"}
 # Select colors
 histology_colors <- c("benign" = "#E74C3C",
                       "dedifferentiated" = "#3498DB", 
@@ -1593,7 +1593,7 @@ df_indiv_clusters_hm_anno <- data.frame(
 We see in the cluster 4 dedifferentiated, G2 and benign histology. In C1, we retrieve G3, G2 and some dediff. In C2 and C3, there is more G2 and G1 with some benign and dediff. We kwnow that dediff are generally bad diagnosis but here we see that they are infiltrated. So this could be induce errors.
 
 \newpage
-```{r, fig.height=8, fig.width=15, fig.cap="Heatmap (from fig. 19) with grade data (n = 102)"}
+```{r, fig.height=6, fig.width=10, fig.cap="Heatmap (from fig. 19) with grade data (n = 102)"}
 Heatmap(
     as.matrix(heatmap_data_mhc_all),
     cluster_rows = TRUE,    
@@ -1618,7 +1618,7 @@ Heatmap(
 
 ## 2) Adding metadata on heatmap with conventional patients
 ### a- k = 2
-```{r, fig.height=8, fig.width=15, fig.cap="Heatmap (from fig. 22) with metadata (n = 73)"}
+```{r, fig.height=6, fig.width=10, fig.cap="Heatmap (from fig. 22) with metadata (n = 73)"}
 # Heatmap
 set.seed(1)
 heatmap_anno_conv <- Heatmap(
@@ -1677,7 +1677,7 @@ df_indiv_clusters_hm_anno_63 <- data.frame(
 We see 2 distinct clusers but the limit is not binary. However, we see that there is more G3 in C1 than C2.
 
 ### b- k = 3
-```{r, fig.height=8, fig.width=15, fig.cap="Heatmap (from fig. 26) with metadata (n = 73)"}
+```{r, fig.height=6, fig.width=10, fig.cap="Heatmap (from fig. 26) with metadata (n = 73)"}
 # Heatmap
 set.seed(1)
 heatmap_anno_conv <- Heatmap(
@@ -1721,7 +1721,7 @@ heatmap_anno_conv <- draw(heatmap_anno_conv)
 We see 2 distinct clusters, the limit is more clear than k = 2. We see, one cluster COLD, another HOT and the last is more or less infiltrated.
 
 ## 3) Adding metadata on heatmap with conventional patients that have survival data
-```{r, fig.height=8, fig.width=15, fig.cap="Heatmap with k=2 with metadata (n = 63)"}
+```{r, fig.height=6, fig.width=10, fig.cap="Heatmap with k=2 with metadata (n = 63)"}
 metadata_surv_conv <- subset(df_metadata_conv, df_metadata_conv$OS.delay != "NA")
 set.seed(1)
 Heatmap(
@@ -1761,7 +1761,7 @@ Heatmap(
 \newpage
 
 ## 4) Adding CTA heatmaps metadata
-### a) Figure 6
+### a- Figure 6
 ```{r, fig.height=6, fig.width=10, fig.cap="Significant CTAs heatmap (from fig.6) with metadata (n = 63)"}
 Heatmap(as.matrix(data_cta_63),
     cluster_rows = TRUE,    
@@ -1821,7 +1821,7 @@ Heatmap(as.matrix(data_cta_63),
 ```
 
 
-### b) Figure 7
+### b- Figure 7
 ```{r, fig.height=6, fig.width=10, fig.cap="Selected significant CTAs heatmap (from fig.7) with metadata (n = 63)"}
 Heatmap(as.matrix(data_selected_CTA_conv_63),
     cluster_rows = TRUE,    
@@ -1858,7 +1858,7 @@ Heatmap(as.matrix(data_selected_CTA_conv_63),
 ```
 
 
-### c) Figure 8
+### c- Figure 8
 ```{r, fig.height=4, fig.width= 8, fig.cap="Not selected ignificant CTAs heatmap (from fig.8) with metadata (n = 63)"}
 Heatmap(as.matrix(data_non_selected_CTA_63),
     cluster_rows = TRUE,    
@@ -2152,7 +2152,7 @@ With kmeans k = 2 on the patients like previous heatmap (IV.1), we confirm the p
 
 ## 2) Weighted correlation network analysis (WGCNA)
 The R package WGCNA allows to see this co-expression between genes. So here, we want to observe the link between CTA genes that have an impact on the survival for conventional chondrosarcoma and the immune cell infiltration. 
-```{r, fig.height=8, fig.width=10, fig.cap="Dendrogram of conventionnal patients (from fig. 6)"}
+```{r, fig.height=8, fig.width=8, fig.cap="Dendrogram of conventionnal patients (from fig. 6)"}
 # Prepare data and select the CTA
 df <- as.data.frame(t(df_z_scores_63[rownames(df_z_scores_63) %in% l_CTA_conv, -c(1, 2)]))
 
@@ -2173,7 +2173,7 @@ plot(sample_hclust,
 ```
 This plot show the hierarchical clustering on the distance betwenn samples. Here, we see that LY016 is outlier, so I delete it.
 
-```{r, fig.width=10, fig.cap="Corrected dendrogram of conventionnal patients (from fig. 6)"}
+```{r, fig.width=8, fig.cap="Corrected dendrogram of conventionnal patients (from fig. 6)"}
 # Delete Ly016
 df_imm_data <- df_imm_data[!rownames(df_imm_data) %in% "LY016",]
 df <- df[!rownames(df) %in% "LY016",]
@@ -2263,7 +2263,7 @@ We see 2 groups, the blue seems to correspond to the middle cluster.
 
 ### c- Relationship between gene modules and immune cell types: Correlation heatmap
 In this section, we calculate the correlation between module genes (calculated from the values of modules' own vectors, i.e., module eigengenes) and traits of interest (here, immune cell expression data). Then we display these correlations as a heatmap.
-```{r, fig.height=8, fig.width=15, fig.cap="Pearson correlation matrix between modules and immune cells expression"}
+```{r, fig.height=6, fig.width=10, fig.cap="Pearson correlation matrix between modules and immune cells expression"}
 n_samples <- nrow(df)
 
 # Recalculate moduleEigengenes with color labels
@@ -2395,7 +2395,7 @@ Heatmap(cor_matrix,
 ```
 \newpage
 
-### c) All CTA
+### c- All CTA
 ```{r, fig.height=10, fig.width=10, fig.cap="Pearson correlation matrix between all CTAs and conventional chondrosarcomas (n = 63)"}
 data <- subset(df_z_scores_63, df_z_scores_63$CTA == "CTA")
 data <- data[, -c(1,2)]
@@ -2446,7 +2446,7 @@ df_cta_clusters_hm <- data.frame(
 ```
 
 
-### d) Not selected CTA
+### d- Not selected CTA
 ```{r, fig.cap="Pearson correlation matrix between non selected significant CTAs and patients with survival data (n = 63)"}
 # Pearson and p-value compute
 cor_matrix <- cor(t(df_imm_z_scores_63), t(data_non_selected_CTA_63), method = "pearson")
@@ -2557,7 +2557,7 @@ Heatmap(cor_matrix,
 \newpage
 
 
-### c) All CTA
+### c- All CTA
 ```{r, fig.height=10, fig.width=10, fig.cap="Pearson correlation matrix between all CTAs and patients with survival data (n = 82)"}
 data <- subset(df_z_scores_82, df_z_scores_82$CTA == "CTA")
 data <- data[, -c(1,2)]
@@ -2610,7 +2610,7 @@ df_cta_clusters_hm <- data.frame(
 #write.table(df_cta_clusters_hm, file = "../results/clusters_indiv/clusters_cta_pearson_82.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
 ```
 
-### d) Not selected CTA
+### d- Not selected CTA
 ```{r, fig.cap="Pearson correlation matrix between non selected significant CTAs and patients with survival data (n = 82)"}
 # Pearson and p-value compute
 cor_matrix <- cor(t(df_imm_z_scores_82), t(data_non_selected_CTA_82), method = "pearson")

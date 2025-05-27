@@ -501,29 +501,7 @@ ggplot(df_long, aes(x = reorder(SYMBOL, -value), y = value, color = as.factor(Cl
   theme(axis.text.x = element_text(angle = 90, hjust = 1))  
 #dev.off()
 ```
-\newpage
 
-```{r, fig.width=8, fig.cap="Intensitites jitter plot for significant CTA (n = 82)"}
-# Cluster data
-cluster_data <- read.table("../results/clusters_indiv/clusters_cta_signif_coxph_all_indiv.tsv", sep = "\t", header = TRUE)
-cluster_data$Cluster <- as.character(cluster_data$Cluster)
-
-# Merge df_long avec les clusters
-df_long <- pivot_longer(df, 
-                        cols = -SYMBOL, 
-                        values_to = "value")
-
-# Ajouter l'information du cluster dans df_long
-df_long <- merge(df_long, cluster_data, by = "SYMBOL")
-
-# Maintenant on peut faire le graphique avec les couleurs par cluster
-ggplot(df_long, aes(x = reorder(SYMBOL, -value), y = value, color = as.factor(Cluster))) +
-  geom_jitter(width = 0.2, height = 0, size = 1, alpha = 0.3) +  # Ajouter la couleur par cluster
-  geom_boxplot(alpha = 0.4, outliers = FALSE, colour = "black", fill = NA) +  # Boîtes sans remplissage mais avec couleur de contour
-  labs(title = "Plot of intensities per significant coxph CTA", x = "CTA", y = "Intensities") +
-  scale_color_manual(values = c("1" = "#EA4343", "2" = "blue", "3" = "#75E05A")) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))  
-```
 \newpage
 
 
