@@ -1,8 +1,8 @@
-# IMoST M2 Bioinformatic internhip
+# IMoST M2 Bioinformatic internship
 
 This repository contains scripts created during my M2 internship in Bioinformatics, focused on the identification of therapeutic targets for radiopharmaceutical therapy in chondrosarcoma.
 
-The objective of this work is to characterize tumor-specific markers in chondrosarcoma. The project is based on transcriptomic and immunopeptidomic data analysis to identify potential peptides present on the surface of cancerous chondrosarcoma cells. We focused on genes classified as Cancer Testis Antigens (CTA), which are expressed in many cancers. Specifically, we explored the expression of these CTA genes in chondrosarcoma and their potential to be presented on the surface of tumor cells via the HLA-I complex, through an immunopeptidomic analysis.
+The objective of this work is to characterize tumor-specific markers in chondrosarcoma. The project is based on transcriptomic and immunopeptidomic data analyses to identify potential peptides present on the surface of cancerous chondrosarcoma cells. We focused on genes classified as Cancer-Testis Antigens (CTA), which are expressed in many cancers. Specifically, we explored the expression of these CTA genes in chondrosarcoma and their potential to be presented on the surface of tumor cells via the HLA-I complex, through an immunopeptidomic analysis.
 
 The first part concern transcriptomic analysis with public dataset of chondrosarcoma (www.ebi.ac.uk/biostudies/arrayexpress/studies/E-MTAB-7264), healthy tissues (gtexportal.org) dataset which is single cell RNA-seq (GSE184118).
 The 2nd part concer immunopeptidomic analysis with the Immune Epitope Database exploration (www.iedb.org).
@@ -66,13 +66,6 @@ You can execute the scripts directly or use RStudio to run the RMarkdown files.
 ├── README.md
 └── cta.yaml                                            # yaml file to generate conda environment
 ```
-
-
-
-## References
-microarray
-sc
-ifb
 
 ## Licence
 Creative Commons Legal Code - CC0 1.0 Universal
