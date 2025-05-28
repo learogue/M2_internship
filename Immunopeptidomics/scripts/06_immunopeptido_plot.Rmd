@@ -1,6 +1,7 @@
 ---
 title: "pMHC analysis"
 author: "Léa ROGUE"
+date: "2025-05-06"
 output:
   pdf_document:
     fig_caption: true
@@ -8,8 +9,14 @@ output:
     toc: true
     toc_depth: '4'
     includes:
-      before_body: tex_files/list_of_figures.tex
-date: "2025-05-06"
+      before_body: ../../Chondrosarcoma/scripts/tex_files/list_of_figures.tex
+  html_document:
+    toc: true
+    toc_depth: 4
+    df_print: paged
+    self_contained: true
+    number_sections: true
+    fig_caption: true
 ---
 
 ```{r, echo = FALSE}
@@ -29,7 +36,7 @@ The second approach constists of integrate the predict affinity of peptides link
 With these 2 approaches, we can integer list of genes to see if genes with predict peptides are validated or not.
 
 # Load libraries
-```{r}
+```{r, results='hide', message=FALSE, warning=FALSE}
 library(ggplot2)
 library(dplyr)
 library(tidyr)
@@ -42,7 +49,7 @@ library(plotly)
 From IEDB web interface, we searched for the number of reference, or the degree of validation in the literature of these peptides from selected genes. We selected peptides with >= 15 references.
 
 ## Distribution of references number per peptide
-```{r}
+```{r, fig.width=7, fig.cap="Histogram of number of references per peptides"}
 df_ref <- read.table("../data/table_ref.tsv", sep ="\t", header = TRUE)
 
 # Associate Gene with peptide
@@ -51,7 +58,7 @@ df_ref$Gene_Peptide <- paste(df_ref$Genes, df_ref$main.peptide, sep = " - ")
 # Create histogram
 ggplot(df_ref, aes(x = reorder(Gene_Peptide, Number.of.IEDB.ref), y = Number.of.IEDB.ref, fill = HLA.A.02.01)) +
   geom_col() +
-  scale_fill_manual(values = c("HLA-A*02:01" = "#E74C3C", "Others" = "#3498DB")) +  # rouge pour A0201
+  scale_fill_manual(values = c("HLA-A*02:01" = "#E74C3C", "Others" = "#3498DB")) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) + 
   labs(title = "Histogram of number of references per peptides",
@@ -98,7 +105,7 @@ df_scatter_ref <- df_scatter_ref %>%
   ungroup()
 ```
 
-```{r}
+```{r, fig.cap="Scatter plot of tumor specificity of CTAs (n = 63) with peptides and number of ref"}
 # Generate scatter plot
 ggplot(df_scatter_ref,
        aes(x = Mean_expression_tissues,
@@ -142,7 +149,7 @@ df_scatter_aff$color_group <- ifelse(is.na(df_scatter_aff$Affinity), "No SB pept
 df_scatter_aff$Affinity <- ifelse(is.na(df_scatter_aff$Affinity), 40, df_scatter_aff$Affinity)
 ```
 
-```{r}
+```{r, fig.cap="Scatter plot of tumor specificity of CTAs (n = 63) with predicted affinity"}
 # Create plot
 ggplot(df_scatter_aff,
        aes(x = Mean_expression_tissues,
@@ -196,7 +203,6 @@ df_scatter_aff_pep$tooltip_peptides[is.na(df_scatter_aff_pep$tooltip_peptides)] 
 df_scatter_aff_pep$min_affinity[is.na(df_scatter_aff_pep$min_affinity)] <- 40
 ```
 
-
 ```{r}
 # Create interactive plot
 p <- ggplot(df_scatter_aff_pep,
@@ -219,10 +225,11 @@ p <- ggplot(df_scatter_aff_pep,
        size = "Inverse Affinity",
        color = "Binding")
 
-ggplotly(p, tooltip = "text")
+#ggplotly(p, tooltip = "text")
 ```
 
 ```{r}
+# Create plot
 p <- ggplot(df_scatter_aff_pep,
        aes(x = Mean_expression_tissues,
            y = Intensity,
@@ -240,21 +247,19 @@ p <- ggplot(df_scatter_aff_pep,
        y = "Chondrosarcoma CTA expression (intensities)",
        color = "Binding")
 
-ggplotly(p, tooltip = "text")
+#ggplotly(p, tooltip = "text")
 ```
+This last plot is an hmtl output because it’s an interactive plot. It is available in the html notebook.
 
-
-###c. Scatter plot with HR data
+### c. Scatter plot with HR data
 ```{r}
 # Adding data on pearson correlation
 df_hot_cold <- read.table("../../Chondrosarcoma/results/clusters_indiv/clusters_cta_pearson_63.tsv", header = T, sep = "\t")
 colnames(df_hot_cold) <- c("Associated_immunophenotype", "SYMBOL")
 df_scatter_aff_pep <- merge(df_scatter_aff_pep, df_hot_cold, by = "SYMBOL", all = T)
 ```
-
-
-
 ```{r, fig.cap="Interactive scatter plot of CTAs intensities and their expression in normal tissues with clustering colors, size by HR (significant), and shape by associated immunophenotype (n = 63)"}
+# Create plot
 p <- ggplot(df_scatter_aff_pep[df_scatter_aff_pep$Cluster_conv != "NA" & df_scatter_aff_pep$Cluster_conv != "c", ],
        aes(x = Mean_expression_tissues, 
            y = Intensity, 
@@ -274,6 +279,6 @@ p <- ggplot(df_scatter_aff_pep[df_scatter_aff_pep$Cluster_conv != "NA" & df_scat
             y = "Chondrosarcoma CTA expression (intensities)", 
             color = "Clustering gene\nimpacting survival\n(conventional CHS)",
             shape = "Associated immunophenotype")
-ggplotly(p, tooltip = "text")
+#ggplotly(p, tooltip = "text")
 ```
-
+This last plot is an hmtl output because it’s an interactive plot. It is available in the html notebook.
