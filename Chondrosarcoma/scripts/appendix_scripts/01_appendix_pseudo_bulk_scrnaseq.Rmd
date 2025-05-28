@@ -129,7 +129,7 @@ Heatmap(
 We see that the more infiltrated tumors are dedifferentiated and low tumors, contrary to the less infiltrated that are high grade.
 
 # II. Relative expression of CTAs
-```{r, fig.height=12, fig.cap="Relative expression of CTAs"}
+```{r, fig.height=10, fig.cap="Relative expression of CTAs"}
 # Create the heatmap
 cta_data <- subset(df_tpm_CTA, df_tpm_CTA$CTA == "CTA")
 rownames(cta_data) <- cta_data$SYMBOL
