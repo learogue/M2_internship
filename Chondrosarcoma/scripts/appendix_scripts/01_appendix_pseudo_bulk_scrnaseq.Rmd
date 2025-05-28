@@ -8,7 +8,7 @@ output:
     toc: true
     toc_depth: '4'
     includes:
-      before_body: tex_files/list_of_figures.tex
+      before_body: ../tex_files/list_of_figures.tex
 date: "2025-03-25"
 ---
 
@@ -23,7 +23,7 @@ opts_chunk$set(
 
 \newpage
 
-This script analyze pseudo bulk scRNAseq the same manner tha microarry part to see if it is coherent and to see the ifiltrated tumors or not..
+This script analyze pseudo bulk scRNAseq the same manner the microarray part to see if it is coherent and to see the infiltrated tumors or not.
 
 # Load libraries
 ```{r, results='hide', message=FALSE, warning=FALSE}
