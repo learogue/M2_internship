@@ -3,6 +3,13 @@ title: "Normal tissues CTA expression"
 author: "Léa ROGUE"
 date: "2025-03-24"
 output:
+  pdf_document:
+    fig_caption: true
+    latex_engine: xelatex
+    toc: true
+    toc_depth: '4'
+    includes:
+      before_body: tex_files/list_of_figures.tex
   html_document:
     toc: true
     toc_depth: 4
@@ -468,5 +475,3 @@ p <- ggplot(df_scatter_anno,
 
 ggplotly(p, tooltip = "text")
 ```
-
-
