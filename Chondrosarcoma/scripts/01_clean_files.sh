@@ -6,8 +6,8 @@
 # Description : This script is useful for cleaning and preprocessing gene expression data. This script filters .CEL
 # files by checking if their filenames contain an ID from the list stored in list_files_used_publi.txt because some
 # files came from same patients. The 1st step is to read the list of valid IDs from list_files_used_publi.txt. The
-# 2nd step is to Iterate through all .CEL files in the directory. The 3rd step is to check if the filename contains
-# a valid ID,iIf the filename matches an ID, keep the file, otherwise, delete the file. Fianlly, the metadata file
+# 2nd step is to iterate through all .CEL files in the directory. The 3rd step is to check if the filename contains
+# a valid ID, if the filename matches an ID, keep the file, otherwise, delete the file. Fianlly, the metadata file
 # (E-MTAB-7264.sdrf.txt) is updated by keeping only the relevant lines.
 # -----------------------------------------------------------------------------------------------------------------
 

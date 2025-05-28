@@ -19,6 +19,7 @@ library(oligo)
 # Directories paths
 data_dir <- "../data/E-MTAB-7264_full"
 output_dir <- "../results"
+dir.create(output_dir)
 
 # SRDF to store the metadata
 SDRF <- read.delim(paste0(data_dir, "/E-MTAB-7264.sdrf.txt"))
