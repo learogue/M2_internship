@@ -1,14 +1,17 @@
 ----------------------------------------------------------------------------------------------------------------------------
--- Bash/SQL script : Extraction of relevant IEDB data for further immunological analysis
+-- SQL script : Extraction of relevant IEDB data for further immunological analysis
 -- Author  : Léa ROGUE
 -- Date    : 11-04-2025
--- Description : This script installs MySQL and imports the IEDB public database. It then performs a series of SQL queries
--- to extract key tables related to epitopes, cancer associated diseases, immune cell types (T and B cells), and molecular 
--- object sequences for the species Homo sapiens. The resulting data is saved as .tsv files in results folder. These tables 
--- will be used for peptides analysis.
+-- Description : This script imports the IEDB public database. It then performs a series of SQL queries to extract key 
+-- tables related to epitopes, cancer associated diseases, immune cell types (T and B cells), and molecular object sequences 
+-- for the species Homo sapiens. The resulting data is saved as .tsv files in results folder. These tables  will be used for 
+-- peptides analysis.
 ----------------------------------------------------------------------------------------------------------------------------
 
 -- Bash commands
+  --cd ../data
+  --wget https://www.iedb.org/downloader.php?file_name=doc/iedb_public.sql.gz
+  --cd ../scripts
   --sudo apt install mysql-server
 
 -- Select iedb database

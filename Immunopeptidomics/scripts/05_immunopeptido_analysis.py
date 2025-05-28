@@ -10,10 +10,6 @@
 # Import packages
 from collections import defaultdict 
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import re
-import plotly.graph_objects as go
 
 # Read gene names and their corresponding entry names
 d_pep_gene = defaultdict(list)

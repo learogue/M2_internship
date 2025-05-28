@@ -21,6 +21,12 @@ alleles=(
     HLA-C0701
     HLA-C0702
 )
+
+# Create output dir
+mkdir ../results/res_netmhc
+mkdir ../results/netmhc_sb
+
+# Predict binding affinity for each allele
 for allele in "${alleles[@]}"; do
     nohup netMHC -a "$allele" -l 8,9,10 ../results/seq_pep_aligned.fasta > ../results/res_netmhc/res_netmhc_${allele}_selected_blastp.out 2>&1 &
 done

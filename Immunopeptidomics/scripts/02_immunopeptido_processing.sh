@@ -7,7 +7,7 @@
 # cancer-testis antigen (CTA) protein sequences. First, it extracts peptide sequences from TSV file and converts 
 # them into a FASTA format. A BLAST database is then created from the CTA protein sequences. The peptide sequences 
 # are aligned against this database using blastp. The results are filtered to retain only those alignments with 0
-# or 1 mismatches. Finally, gene names are extracted from the CTA FASTA file to allow mapping of hits to gene 
+# or 1 mismatches. Finally, gene names are extracted from the CTA fasta file to allow mapping of hits to gene 
 # identifiers.
 # ------------------------------------------------------------------------------------------------------------------
 

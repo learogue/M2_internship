@@ -272,7 +272,8 @@ p <- ggplot(df_scatter_aff_pep[df_scatter_aff_pep$Cluster_conv != "NA" & df_scat
        labs(title = "Scatter plot of tumor specificity of CTAs (n = 63)",
             x = "Normal tissues expression (Log10 TPM mean)", 
             y = "Chondrosarcoma CTA expression (intensities)", 
-            color = "Clustering gene\nimpacting survival\n(conventional CHS)")
+            color = "Clustering gene\nimpacting survival\n(conventional CHS)",
+            shape = "Associated immunophenotype")
 ggplotly(p, tooltip = "text")
 ```
 
