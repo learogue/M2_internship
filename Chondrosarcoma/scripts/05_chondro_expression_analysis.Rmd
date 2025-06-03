@@ -2444,7 +2444,29 @@ df_cta_clusters_hm <- data.frame(
 # Save
 #write.table(df_cta_clusters_hm, file = "../results/clusters_indiv/clusters_cta_pearson_63.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
 ```
+\newpage
 
+#### Correlation curve
+```{r, fig.cap="Exemple of positive correlation"}
+plot(t(data["MS4A14", ]), df_imm_z_scores_63["Macrophages", ],
+     main = "MS4A14 and macrophages correlation",
+     xlab = "MS4A14 Z-scores",
+     ylab = "Macrophages Z-scores",
+     pch = 19)
+abline(lm(df_imm_z_scores_63["Macrophages", ] ~ t(data["MS4A14", ])), col = "red", lwd = 2)
+text(2.2, 2.1, paste("R² =", round(cor(t(data["MS4A14", ]), df_imm_z_scores_63["Macrophages", ]), 3)))
+```
+
+```{r, fig.cap="Exemple of negative correlation"}
+plot(t(data["CDCA5", ]), df_imm_z_scores_63["pDC", ],
+     main = "CDCA5 and macrophages correlation",
+     xlab = "CDCA5 Z-scores",
+     ylab = "pDC Z-scores",
+     pch = 19)
+abline(lm(df_imm_z_scores_63["pDC", ] ~ t(data["CDCA5", ])), col = "red", lwd = 2)
+text(2.2, 2, paste("R² =", round(cor(t(data["MS4A14", ]), df_imm_z_scores_63["pDC", ]), 3)))
+```
+\newpage
 
 ### d- Not selected CTA
 ```{r, fig.cap="Pearson correlation matrix between non selected significant CTAs and patients with survival data (n = 63)"}
