@@ -2459,7 +2459,7 @@ text(2.2, 2.1, paste("R² =", round(cor(t(data["MS4A14", ]), df_imm_z_scores_63[
 
 ```{r, fig.cap="Exemple of negative correlation"}
 plot(t(data["CDCA5", ]), df_imm_z_scores_63["pDC", ],
-     main = "CDCA5 and macrophages correlation",
+     main = "CDCA5 and pDC correlation",
      xlab = "CDCA5 Z-scores",
      ylab = "pDC Z-scores",
      pch = 19)
