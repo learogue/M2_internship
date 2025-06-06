@@ -55,7 +55,6 @@ You can execute the scripts directly or use RStudio to run the RMarkdown files.
 │       └── tex_files                                       # Contain a file to genereate list of figures in pdf (Rmarkdown)               
 ├── Immunopeptidomics
 │   ├── data
-│   │   ├── proteine_seq_targeted_cta.fasta                 # Fasta file with 358 targeted CTA (from uniprot)
 │   │   └── table_ref.tsv                                   # Table with number of references per main peptides per targeted CTA
 │   ├── results
 │   └── scripts
